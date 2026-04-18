@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once 'auth.php';
+secureSessionStart();
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../pages/signin.html");
@@ -12,8 +13,7 @@ if (!isAdmin()) {
     exit();
 }
 
-require_once 'config.php';
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+$conn = getDB();
 if ($conn->connect_error) { die("Connection failed"); }
 
 $filename = 'NutriPh_Feeding_Program_' . date('Y-m-d') . '.xls';

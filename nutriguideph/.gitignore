@@ -1,6 +1,9 @@
 # Credentials - NEVER push this
 php/config.php
 
+# Log files
+logs/*.log
+
 # OS files
 .DS_Store
 Thumbs.db

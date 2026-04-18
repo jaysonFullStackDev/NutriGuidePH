@@ -1,29 +1,21 @@
-<?php
-session_start();
-
-if (!isset($_SESSION['user_id'])) {
-    header("Location: ../pages/signin.html");
-    exit();
-}
-
+﻿<?php
 require_once 'auth.php';
+secureSessionStart();
 checkAccess(['Employee', 'Admin', 'Super Admin']);
 
-require_once 'config.php';
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+$conn = getDB();
 
 $save_msg = "";
 $save_type = "";
 
-// ── Save Record ────────────────────────────────────────────────────────────
+// â”€â”€ Save Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 if (isset($_POST['save_record'])) {
     $ln             = $_POST["lname"];
     $fn             = $_POST["fname"];
     $mid            = $_POST["m_initial"];
     $gender         = $_POST["gender"];
+    $grade          = $_POST["grade_level"] ?? '';
+    $section        = $_POST["section"] ?? '';
     $height         = $_POST["height"];
     $h_unit         = $_POST["measurement_unit"];
     $weight         = $_POST["weight"];
@@ -34,12 +26,13 @@ if (isset($_POST['save_record'])) {
     $contact        = $_POST["number"];
     $email          = $_POST["email"];
 
-    $stmt = $conn->prepare("INSERT INTO stdRecord (std_last_name, std_first_name, std_mid_initial, gender, height, height_unit, weight, weight_unit, classification, bmi, guardian_name, guardian_number, guardian_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("sssssssssssss", $ln, $fn, $mid, $gender, $height, $h_unit, $weight, $w_unit, $classification, $bmi, $pname, $contact, $email);
+    $stmt = $conn->prepare("INSERT INTO stdRecord (std_last_name, std_first_name, std_mid_initial, gender, grade_level, section, height, height_unit, weight, weight_unit, classification, bmi, guardian_name, guardian_number, guardian_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("sssssssssssssss", $ln, $fn, $mid, $gender, $grade, $section, $height, $h_unit, $weight, $w_unit, $classification, $bmi, $pname, $contact, $email);
 
     if ($stmt->execute()) {
         $save_msg  = "Record saved successfully!";
         $save_type = "success";
+        auditLog('add_record', 'stdRecord', $conn->insert_id, "$fn $mid $ln - BMI: $bmi ($classification)");
 
         if (in_array($classification, ['Underweight', 'Overweight', 'Obese']) && !empty($email)) {
             require_once 'mailer.php';
@@ -53,22 +46,30 @@ if (isset($_POST['save_record'])) {
     $stmt->close();
 }
 
-// ── Calculate BMI on Submit ────────────────────────────────────────────────
+// â”€â”€ Calculate BMI on Submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 $preview = null;
+$validation_error = '';
 if (isset($_POST['submit_form'])) {
-    $fn     = $_POST["fname"];
-    $mid    = $_POST["m_initial"];
-    $ln     = $_POST["lname"];
+    $fn     = sanitize($_POST["fname"]);
+    $mid    = sanitize($_POST["m_initial"]);
+    $ln     = sanitize($_POST["lname"]);
     $bday   = $_POST["birthday"];
     $gender = $_POST["gender"];
-    $weight = $_POST["weight"];
+    $grade  = sanitize($_POST["grade_level"] ?? '');
+    $section = sanitize($_POST["section"] ?? '');
+    $weight = floatval($_POST["weight"]);
     $w_unit = $_POST["weight_unit"];
-    $height = $_POST["height"];
+    $height = floatval($_POST["height"]);
     $h_unit = $_POST["measurement_unit"];
-    $pname  = $_POST["p_name"];
-    $contact= $_POST["number"];
-    $email  = $_POST["email"];
+    $pname  = sanitize($_POST["p_name"]);
+    $contact= sanitize($_POST["number"]);
+    $email  = trim($_POST["email"]);
 
+    if (!validateHeight($height, $h_unit)) {
+        $validation_error = 'Invalid height value for the selected unit.';
+    } elseif (!validateWeight($weight, $w_unit)) {
+        $validation_error = 'Invalid weight value for the selected unit.';
+    } else {
     if ($h_unit == "cm")   { $h_m = $height / 100; }
     elseif ($h_unit == "m"){ $h_m = $height; }
     elseif ($h_unit == "inch") { $h_m = $height * 0.0254; }
@@ -82,7 +83,8 @@ if (isset($_POST['submit_form'])) {
     elseif  ($bmi <= 29.9) { $classification = "Overweight"; }
     else                   { $classification = "Obese"; }
 
-    $preview = compact('fn','mid','ln','bday','gender','weight','w_unit','height','h_unit','bmi','classification','pname','contact','email');
+    $preview = compact('fn','mid','ln','bday','gender','grade','section','weight','w_unit','height','h_unit','bmi','classification','pname','contact','email');
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -90,7 +92,7 @@ if (isset($_POST['submit_form'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NutriPh Guide – Add Record</title>
+    <title>NutriPh Guide â€“ Add Record</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
@@ -99,41 +101,8 @@ if (isset($_POST['submit_form'])) {
 <body style="background: linear-gradient(135deg, rgba(45,90,14,0.7), rgba(61,107,15,0.6)), url('../images/happy.jpg') center/cover no-repeat fixed; min-height:100vh;">
 
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
-        <div class="container-fluid px-3 px-lg-5">
-            <a class="navbar-brand d-flex align-items-center gap-2" href="../index.php">
-                <img src="../images/logo.png" alt="Logo" height="40">
-                <span class="fw-bold brand-text">NutriPh Guide</span>
-            </a>
-            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav ms-auto gap-1 align-items-center">
-                    <li class="nav-item"><a class="nav-link" href="dashboard.php">Dashboard</a></li>
-                    <li class="nav-item">
-                        <span class="nav-link text-success-light fw-semibold"><i class="fa-solid fa-user me-1"></i>Hi, <?= htmlspecialchars($_SESSION['firstName']) ?></span>
-                    </li>
-                    <li class="nav-item"><a class="nav-link" href="logout.php">Logout</a></li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <?php $activePage = 'addrecord'; include 'navbar.php'; ?>
 
-    <!-- Mobile Offcanvas -->
-    <div class="offcanvas offcanvas-end text-bg-dark" id="mobileSidebar">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title brand-text">NutriPh Guide</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-        </div>
-        <div class="offcanvas-body">
-            <ul class="navbar-nav gap-2">
-                <li class="nav-item"><a class="nav-link text-white" href="dashboard.php"><i class="fa-solid fa-gauge me-2"></i>Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link text-white" href="#footer"><i class="fa-solid fa-circle-info me-2"></i>About Us</a></li>
-                <li class="nav-item"><a class="nav-link text-white" href="logout.php"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
-            </ul>
-        </div>
-    </div>
 
     <!-- Main Content -->
     <div class="container-fluid px-3 px-lg-5 py-3 py-lg-4">
@@ -146,6 +115,10 @@ if (isset($_POST['submit_form'])) {
                         <h5 class="fw-bold text-success mb-4">
                             <i class="fa-solid fa-clipboard-list me-2"></i>Student Record Entry
                         </h5>
+
+                        <?php if ($validation_error): ?>
+                            <div class="alert alert-danger small py-2"><i class="fa-solid fa-circle-exclamation me-1"></i><?= $validation_error ?></div>
+                        <?php endif; ?>
 
                         <form action="<?= $_SERVER['PHP_SELF'] ?>" method="POST">
                             <p class="section-label mb-3">Student Information</p>
@@ -176,6 +149,22 @@ if (isset($_POST['submit_form'])) {
                                         <option value="Male" <?= (($preview['gender'] ?? '') == 'Male') ? 'selected' : '' ?>>Male</option>
                                         <option value="Female" <?= (($preview['gender'] ?? '') == 'Female') ? 'selected' : '' ?>>Female</option>
                                     </select>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-sm-6">
+                                    <label class="form-label small fw-semibold text-muted">Grade Level</label>
+                                    <select class="form-select" name="grade_level">
+                                        <option value="">Select...</option>
+                                        <?php for ($g = 1; $g <= 6; $g++): ?>
+                                            <option value="Grade <?= $g ?>" <?= (($preview['grade'] ?? '') == "Grade $g") ? 'selected' : '' ?>>Grade <?= $g ?></option>
+                                        <?php endfor; ?>
+                                    </select>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label small fw-semibold text-muted">Section</label>
+                                    <input type="text" class="form-control" name="section" placeholder="e.g. Sampaguita" value="<?= htmlspecialchars($preview['section'] ?? '') ?>">
                                 </div>
                             </div>
 
@@ -282,6 +271,8 @@ if (isset($_POST['submit_form'])) {
                                 <input type="hidden" name="m_initial" value="<?= htmlspecialchars($preview['mid']) ?>">
                                 <input type="hidden" name="lname" value="<?= htmlspecialchars($preview['ln']) ?>">
                                 <input type="hidden" name="gender" value="<?= htmlspecialchars($preview['gender']) ?>">
+                                <input type="hidden" name="grade_level" value="<?= htmlspecialchars($preview['grade'] ?? '') ?>">
+                                <input type="hidden" name="section" value="<?= htmlspecialchars($preview['section'] ?? '') ?>">
                                 <input type="hidden" name="height" value="<?= htmlspecialchars($preview['height']) ?>">
                                 <input type="hidden" name="measurement_unit" value="<?= htmlspecialchars($preview['h_unit']) ?>">
                                 <input type="hidden" name="weight" value="<?= htmlspecialchars($preview['weight']) ?>">

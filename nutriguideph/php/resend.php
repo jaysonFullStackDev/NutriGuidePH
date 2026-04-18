@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once 'auth.php';
+secureSessionStart();
 
 if (!isset($_SESSION['verify_email'])) {
     header("Location: ../pages/signin.html");
@@ -9,13 +10,7 @@ if (!isset($_SESSION['verify_email'])) {
 $email = $_SESSION['verify_email'];
 $name  = $_SESSION['verify_name'] ?? 'User';
 
-require_once 'config.php';
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-
-if ($conn->connect_error) {
-    header("Location: ../pages/verify.html?error=db_error");
-    exit();
-}
+$conn = getDB();
 
 $code    = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 $expires = date('Y-m-d H:i:s', strtotime('+15 minutes'));

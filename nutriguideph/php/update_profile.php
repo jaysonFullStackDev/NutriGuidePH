@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once 'auth.php';
+secureSessionStart();
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_id'])) {
@@ -13,13 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 require_once 'config.php';
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-if ($conn->connect_error) {
-    echo json_encode(['error' => 'Database error']);
-    exit();
-}
-
-mysqli_report(MYSQLI_REPORT_OFF);
+$conn = getDB();
 
 $action = $_POST['action'] ?? '';
 $email  = $_SESSION['user_id'];
@@ -40,6 +35,7 @@ if ($action === 'update_info') {
     if ($stmt->execute()) {
         $_SESSION['firstName'] = $firstName;
         $_SESSION['user_id']   = $newEmail;
+        auditLog('update_profile', 'account', null, "Name: $firstName $lastName");
         echo json_encode(['success' => true, 'firstName' => $firstName]);
     } else {
         if ($conn->errno == 1062) {
@@ -93,6 +89,7 @@ if ($action === 'update_info') {
     $stmt->bind_param("ss", $hashed, $email);
 
     if ($stmt->execute()) {
+        auditLog('change_password', 'account');
         echo json_encode(['success' => true]);
     } else {
         echo json_encode(['error' => 'Password update failed']);

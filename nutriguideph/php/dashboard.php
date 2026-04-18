@@ -1,19 +1,11 @@
-<?php
-session_start();
-
-if (!isset($_SESSION['user_id'])) {
-    header("Location: ../pages/signin.html");
-    exit();
-}
-
+﻿<?php
 require_once 'auth.php';
+secureSessionStart();
+
 checkAccess(['Employee', 'Admin', 'Super Admin']);
 
 require_once 'config.php';
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+$conn = getDB();
 
 // Stats
 $total = $conn->query("SELECT COUNT(*) as c FROM stdRecord")->fetch_assoc()['c'];
@@ -24,24 +16,37 @@ $obese = $conn->query("SELECT COUNT(*) as c FROM stdRecord WHERE classification=
 $males = $conn->query("SELECT COUNT(*) as c FROM stdRecord WHERE gender='Male'")->fetch_assoc()['c'];
 $females = $conn->query("SELECT COUNT(*) as c FROM stdRecord WHERE gender='Female'")->fetch_assoc()['c'];
 
-// Recent records
+// Pagination
+$page = max(1, intval($_GET['page'] ?? 1));
+$perPage = 20;
+$offset = ($page - 1) * $perPage;
+
+// Count total for pagination
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 if ($search !== '') {
-    $stmt = $conn->prepare("SELECT * FROM stdRecord WHERE std_first_name LIKE ? OR std_last_name LIKE ? OR classification LIKE ? ORDER BY created_at DESC LIMIT 50");
+    $countStmt = $conn->prepare("SELECT COUNT(*) as c FROM stdRecord WHERE std_first_name LIKE ? OR std_last_name LIKE ? OR classification LIKE ?");
     $like = "%$search%";
-    $stmt->bind_param("sss", $like, $like, $like);
+    $countStmt->bind_param("sss", $like, $like, $like);
+    $countStmt->execute();
+    $totalRecords = $countStmt->get_result()->fetch_assoc()['c'];
+    $countStmt->close();
+
+    $stmt = $conn->prepare("SELECT * FROM stdRecord WHERE std_first_name LIKE ? OR std_last_name LIKE ? OR classification LIKE ? ORDER BY created_at DESC LIMIT ? OFFSET ?");
+    $stmt->bind_param("sssii", $like, $like, $like, $perPage, $offset);
     $stmt->execute();
     $records = $stmt->get_result();
 } else {
-    $records = $conn->query("SELECT * FROM stdRecord ORDER BY created_at DESC LIMIT 50");
+    $totalRecords = $total;
+    $records = $conn->query("SELECT * FROM stdRecord ORDER BY created_at DESC LIMIT $perPage OFFSET $offset");
 }
+$totalPages = max(1, ceil($totalRecords / $perPage));
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NutriPh Guide – Dashboard</title>
+    <title>NutriPh Guide â€“ Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
@@ -49,58 +54,7 @@ if ($search !== '') {
 </head>
 <body style="background: linear-gradient(135deg, rgba(45,90,14,0.7), rgba(61,107,15,0.6)), url('../images/happy.jpg') center/cover no-repeat fixed; min-height:100vh;">
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
-        <div class="container-fluid px-3 px-lg-5">
-            <a class="navbar-brand d-flex align-items-center gap-2" href="../index.php">
-                <img src="../images/logo.png" alt="Logo" height="40">
-                <span class="fw-bold brand-text">NutriPh Guide</span>
-            </a>
-            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav ms-auto gap-1 align-items-center">
-                    <li class="nav-item"><a class="nav-link active" href="dashboard.php">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="feeding_program.php">Feeding Program</a></li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle text-success-light fw-semibold" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fa-solid fa-circle-user me-1"></i><?= htmlspecialchars($_SESSION['firstName']) ?>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-3" style="min-width:200px;">
-                            <li class="px-3 py-2">
-                                <div class="small fw-bold"><?= htmlspecialchars($_SESSION['firstName']) ?></div>
-                                <div class="text-muted" style="font-size:0.75rem;"><?= htmlspecialchars($_SESSION['role'] ?? 'User') ?></div>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item small" href="#" id="openProfileBtn"><i class="fa-solid fa-user-pen me-2 text-success"></i>My Profile</a></li>
-                            <li><a class="dropdown-item small" href="#" id="openPasswordBtn"><i class="fa-solid fa-key me-2 text-warning"></i>Change Password</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item small text-danger" href="logout.php"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Mobile Offcanvas -->
-    <div class="offcanvas offcanvas-end text-bg-dark" id="mobileSidebar">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title brand-text">NutriPh Guide</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-        </div>
-        <div class="offcanvas-body">
-            <ul class="navbar-nav gap-2">
-                <li class="nav-item"><a class="nav-link text-white" href="dashboard.php"><i class="fa-solid fa-gauge me-2"></i>Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link text-white" href="feeding_program.php"><i class="fa-solid fa-utensils me-2"></i>Feeding Program</a></li>
-                <li class="nav-item"><a class="nav-link text-white" href="#" id="openProfileBtnMobile"><i class="fa-solid fa-user-pen me-2"></i>My Profile</a></li>
-                <li class="nav-item"><a class="nav-link text-white" href="#" id="openPasswordBtnMobile"><i class="fa-solid fa-key me-2"></i>Change Password</a></li>
-                <li class="nav-item"><a class="nav-link text-white" href="#footer"><i class="fa-solid fa-circle-info me-2"></i>About Us</a></li>
-                <li class="nav-item"><a class="nav-link text-white" href="logout.php"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
-            </ul>
-        </div>
-    </div>
+    <?php $activePage = 'dashboard'; include 'navbar.php'; ?>
 
     <!-- Dashboard Content -->
     <div class="container-fluid px-3 px-lg-5 py-3 py-lg-4">
@@ -272,10 +226,9 @@ if ($search !== '') {
                             </ul>
                         </div>
                         <?php endif; ?>
-                        <form method="GET" class="d-flex gap-2" style="max-width:280px;width:100%;">
-                            <input type="text" class="form-control form-control-sm" name="search" placeholder="Search..." value="<?= htmlspecialchars($search) ?>">
-                            <button type="submit" class="btn btn-green btn-sm px-3"><i class="fa-solid fa-search"></i></button>
-                        </form>
+                        <div class="d-flex gap-2" style="max-width:280px;width:100%;">
+                            <input type="text" class="form-control form-control-sm" id="liveSearch" placeholder="Search name, classification, guardian..." value="<?= htmlspecialchars($search) ?>">
+                        </div>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -290,74 +243,16 @@ if ($search !== '') {
                                 <th class="small fw-semibold">Classification</th>
                                 <th class="small fw-semibold">Guardian</th>
                                 <th class="small fw-semibold">Date</th>
-                                <?php if ($canEdit): ?><th class="small fw-semibold text-center">Action</th><?php endif; ?>
+                                <?php if ($canEdit): ?><th class="small fw-semibold action-cell">Action</th><?php endif; ?>
+                            </tr>
                             </tr>
                         </thead>
-                        <tbody>
-                            <?php if ($records->num_rows > 0): ?>
-                                <?php while ($row = $records->fetch_assoc()):
-                                    $cls = $row['classification'];
-                                    $badge = match($cls) {
-                                        'Underweight'  => 'badge-underweight',
-                                        'Normal Weight' => 'badge-normal',
-                                        'Overweight'   => 'badge-overweight',
-                                        default        => 'badge-obese'
-                                    };
-                                ?>
-                                <tr>
-                                    <td class="small">
-                                        <a href="#" class="text-decoration-none fw-semibold student-name-link" style="color:#2d5a0e;"
-                                           data-fn="<?= htmlspecialchars($row['std_first_name']) ?>"
-                                           data-ln="<?= htmlspecialchars($row['std_last_name']) ?>"
-                                           data-mid="<?= htmlspecialchars($row['std_mid_initial']) ?>">
-                                            <?= htmlspecialchars($row['std_first_name'] . ' ' . $row['std_mid_initial'] . ' ' . $row['std_last_name']) ?>
-                                        </a>
-                                        <?php if ($cls !== 'Normal Weight'): ?>
-                                            <i class="fa-solid fa-triangle-exclamation ms-1 text-danger" style="font-size:0.7rem;" title="Malnourished – <?= $cls ?>"></i>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td class="small"><?= htmlspecialchars($row['gender']) ?></td>
-                                    <td class="small"><?= htmlspecialchars($row['height'] . ' ' . $row['height_unit']) ?></td>
-                                    <td class="small"><?= htmlspecialchars($row['weight'] . ' ' . $row['weight_unit']) ?></td>
-                                    <td class="small fw-bold"><?= $row['bmi'] ?></td>
-                                    <td><span class="badge rounded-pill <?= $badge ?>"><?= $cls ?></span></td>
-                                    <td class="small"><?= htmlspecialchars($row['guardian_name']) ?></td>
-                                    <td class="small text-muted"><?= date('M d, Y', strtotime($row['created_at'])) ?></td>
-                                    <?php if ($canEdit): ?>
-                                    <td class="text-center text-nowrap">
-                                        <button class="btn btn-sm btn-outline-success py-0 px-2 edit-record-btn"
-                                            data-id="<?= $row['id'] ?>"
-                                            data-fn="<?= htmlspecialchars($row['std_first_name']) ?>"
-                                            data-ln="<?= htmlspecialchars($row['std_last_name']) ?>"
-                                            data-mid="<?= htmlspecialchars($row['std_mid_initial']) ?>"
-                                            data-gender="<?= htmlspecialchars($row['gender']) ?>"
-                                            data-height="<?= $row['height'] ?>"
-                                            data-hunit="<?= htmlspecialchars($row['height_unit']) ?>"
-                                            data-weight="<?= $row['weight'] ?>"
-                                            data-wunit="<?= htmlspecialchars($row['weight_unit']) ?>"
-                                            data-guardian="<?= htmlspecialchars($row['guardian_name']) ?>"
-                                            data-gnum="<?= htmlspecialchars($row['guardian_number']) ?>"
-                                            data-gemail="<?= htmlspecialchars($row['guardian_email']) ?>">
-                                            <i class="fa-solid fa-pen-to-square" style="font-size:0.75rem;"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger py-0 px-2 delete-record-btn" data-id="<?= $row['id'] ?>">
-                                            <i class="fa-solid fa-trash" style="font-size:0.75rem;"></i>
-                                        </button>
-                                    </td>
-                                    <?php endif; ?>
-                                </tr>
-                                <?php endwhile; ?>
-                            <?php else: ?>
-                                <tr>
-                                    <td colspan="<?= $canEdit ? 9 : 8 ?>" class="text-center text-muted py-4">
-                                        <i class="fa-solid fa-inbox fa-2x mb-2 opacity-25 d-block"></i>
-                                        <?= $search ? 'No records match your search.' : 'No records yet. Start by adding a student record.' ?>
-                                    </td>
-                                </tr>
-                            <?php endif; ?>
+                        <tbody id="recordsBody">
+                            <tr><td colspan="<?= $canEdit ? 9 : 8 ?>" class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm text-success"></div> Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
+                <div id="paginationContainer" class="mt-3"></div>
             </div>
         </div>
     </div>
@@ -548,203 +443,150 @@ if ($search !== '') {
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
         AOS.init({ duration: 700, once: true });
-
-        // Navbar scroll effect
         const nav = document.querySelector('.navbar');
-        window.addEventListener('scroll', () => {
-            nav.classList.toggle('navbar-scrolled', window.scrollY > 50);
-        });
+        window.addEventListener('scroll', () => { nav.classList.toggle('navbar-scrolled', window.scrollY > 50); });
 
-        // Toast notification helper
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
             const id = 'toast_' + Date.now();
             const icon = type === 'success' ? 'circle-check' : (type === 'error' ? 'circle-exclamation' : 'triangle-exclamation');
-            const html = '<div id="' + id + '" class="toast-custom toast-' + type + ' mb-2"><div class="toast-body d-flex align-items-center gap-2"><i class="fa-solid fa-' + icon + '"></i> ' + message + '</div></div>';
-            container.insertAdjacentHTML('beforeend', html);
+            container.insertAdjacentHTML('beforeend', '<div id="'+id+'" class="toast-custom toast-'+type+' mb-2"><div class="toast-body d-flex align-items-center gap-2"><i class="fa-solid fa-'+icon+'"></i> '+message+'</div></div>');
             setTimeout(() => { const el = document.getElementById(id); if (el) el.remove(); }, 4000);
         }
 
-        // BMI Pie Chart
-        new Chart(document.getElementById('bmiChart'), {
-            type: 'pie',
-            data: {
-                labels: ['Underweight', 'Normal', 'Overweight', 'Obese'],
-                datasets: [{
-                    data: [<?= $underweight ?>, <?= $normal ?>, <?= $overweight ?>, <?= $obese ?>],
-                    backgroundColor: ['#e74c3c', '#27ae60', '#f39c12', '#8e44ad'],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true } }
-                }
-            }
-        });
+        function esc(s) { if (!s) return ''; const el = document.createElement('span'); el.textContent = s; return el.innerHTML; }
+        function formatDate(d) { return new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }); }
 
-        // Gender Doughnut Chart
-        new Chart(document.getElementById('genderChart'), {
-            type: 'doughnut',
-            data: {
-                labels: ['Male', 'Female'],
-                datasets: [{
-                    data: [<?= $males ?>, <?= $females ?>],
-                    backgroundColor: ['#2471a3', '#c2185b'],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                cutout: '55%',
-                plugins: {
-                    legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true } }
-                }
-            }
-        });
+        // Charts
+        new Chart(document.getElementById('bmiChart'), { type:'pie', data:{ labels:['Underweight','Normal','Overweight','Obese'], datasets:[{ data:[<?= $underweight ?>,<?= $normal ?>,<?= $overweight ?>,<?= $obese ?>], backgroundColor:['#e74c3c','#27ae60','#f39c12','#8e44ad'], borderWidth:2, borderColor:'#fff' }] }, options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{ padding:16, usePointStyle:true } } } } });
+        new Chart(document.getElementById('genderChart'), { type:'doughnut', data:{ labels:['Male','Female'], datasets:[{ data:[<?= $males ?>,<?= $females ?>], backgroundColor:['#2471a3','#c2185b'], borderWidth:2, borderColor:'#fff' }] }, options:{ responsive:true, cutout:'55%', plugins:{ legend:{ position:'bottom', labels:{ padding:16, usePointStyle:true } } } } });
 
-        // Student History Modal
+        // â”€â”€ AJAX Live Search Table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        const canEdit = <?= $canEdit ? 'true' : 'false' ?>;
+        const colSpan = canEdit ? 9 : 8;
+        const tbody = document.getElementById('recordsBody');
+        const pagContainer = document.getElementById('paginationContainer');
+        const searchInput = document.getElementById('liveSearch');
+        let searchTimer = null, currentPage = 1;
+
+        searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { currentPage = 1; loadRecords(); }, 300); });
+
+        function loadRecords() {
+            const q = searchInput.value.trim();
+            tbody.innerHTML = '<tr><td colspan="'+colSpan+'" class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm text-success"></div> Searching...</td></tr>';
+            fetch('search_records.php?search=' + encodeURIComponent(q) + '&page=' + currentPage)
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.records || data.records.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="'+colSpan+'" class="text-center text-muted py-4"><i class="fa-solid fa-inbox fa-2x mb-2 opacity-25 d-block"></i>'+(q?'No records match.':'No records yet.')+'</td></tr>';
+                        pagContainer.innerHTML = ''; return;
+                    }
+                    let html = '';
+                    data.records.forEach(r => {
+                        const cls = r.classification;
+                        const badge = {Underweight:'badge-underweight','Normal Weight':'badge-normal',Overweight:'badge-overweight',Obese:'badge-obese'}[cls]||'badge-obese';
+                        const nm = esc(r.std_first_name)+' '+esc(r.std_mid_initial)+' '+esc(r.std_last_name);
+                        const dt = formatDate(r.created_at);
+                        html += '<tr><td class="small"><a href="#" class="text-decoration-none fw-semibold student-name-link" style="color:#2d5a0e;" data-fn="'+esc(r.std_first_name)+'" data-ln="'+esc(r.std_last_name)+'" data-mid="'+esc(r.std_mid_initial)+'">'+nm+'</a>';
+                        if (cls !== 'Normal Weight') html += ' <i class="fa-solid fa-triangle-exclamation ms-1 text-danger" style="font-size:0.7rem;"></i>';
+                        html += '</td><td class="small">'+esc(r.gender)+'</td><td class="small">'+esc(r.height)+' '+esc(r.height_unit)+'</td><td class="small">'+esc(r.weight)+' '+esc(r.weight_unit)+'</td><td class="small fw-bold">'+r.bmi+'</td><td><span class="badge rounded-pill '+badge+'">'+cls+'</span></td><td class="small">'+esc(r.guardian_name)+'</td><td class="small text-muted">'+dt+'</td>';
+                        if (canEdit) html += '<td class="action-cell"><button class="btn btn-sm btn-outline-success edit-record-btn" data-id="'+r.id+'" data-fn="'+esc(r.std_first_name)+'" data-ln="'+esc(r.std_last_name)+'" data-mid="'+esc(r.std_mid_initial)+'" data-gender="'+esc(r.gender)+'" data-height="'+r.height+'" data-hunit="'+esc(r.height_unit)+'" data-weight="'+r.weight+'" data-wunit="'+esc(r.weight_unit)+'" data-guardian="'+esc(r.guardian_name)+'" data-gnum="'+esc(r.guardian_number)+'" data-gemail="'+esc(r.guardian_email)+'"><i class="fa-solid fa-pen-to-square"></i></button> <button class="btn btn-sm btn-outline-danger delete-record-btn" data-id="'+r.id+'"><i class="fa-solid fa-trash"></i></button></td>';
+                        html += '</tr>';
+                    });
+                    tbody.innerHTML = html;
+                    // Pagination
+                    if (data.totalPages > 1) {
+                        let p = '<ul class="pagination pagination-sm justify-content-center mb-0">';
+                        p += '<li class="page-item '+(data.page<=1?'disabled':'')+'"><a class="page-link pag-link" href="#" data-p="'+(data.page-1)+'"><i class="fa-solid fa-chevron-left"></i></a></li>';
+                        for (let i = Math.max(1,data.page-2); i <= Math.min(data.totalPages,data.page+2); i++) p += '<li class="page-item '+(i===data.page?'active':'')+'"><a class="page-link pag-link" href="#" data-p="'+i+'">'+i+'</a></li>';
+                        p += '<li class="page-item '+(data.page>=data.totalPages?'disabled':'')+'"><a class="page-link pag-link" href="#" data-p="'+(data.page+1)+'"><i class="fa-solid fa-chevron-right"></i></a></li></ul>';
+                        p += '<p class="text-center text-muted small mt-2 mb-0">Page '+data.page+' of '+data.totalPages+' ('+data.totalRecords+' records)</p>';
+                        pagContainer.innerHTML = p;
+                        pagContainer.querySelectorAll('.pag-link').forEach(l => l.addEventListener('click', function(e) { e.preventDefault(); const pg = parseInt(this.dataset.p); if (pg >= 1 && pg <= data.totalPages) { currentPage = pg; loadRecords(); } }));
+                    } else pagContainer.innerHTML = '';
+                    bindNameLinks(); bindEditBtns(); bindDeleteBtns();
+                }).catch(() => { tbody.innerHTML = '<tr><td colspan="'+colSpan+'" class="text-center text-danger py-4">Failed to load.</td></tr>'; });
+        }
+        loadRecords();
+
+        // â”€â”€ Student History Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         const historyModal = new bootstrap.Modal(document.getElementById('studentHistoryModal'));
         const modalBody = document.getElementById('historyModalBody');
         const modalLabel = document.getElementById('studentHistoryLabel');
 
-        document.querySelectorAll('.student-name-link').forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                const fn = this.dataset.fn;
-                const ln = this.dataset.ln;
-                const mid = this.dataset.mid;
-                const fullName = fn + ' ' + mid + ' ' + ln;
-
-                modalLabel.innerHTML = '<i class="fa-solid fa-clock-rotate-left me-2"></i>' + fullName;
-                modalBody.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-success" role="status"></div><p class="text-muted small mt-2">Loading records...</p></div>';
-                historyModal.show();
-
-                fetch('get_student_history.php?fn=' + encodeURIComponent(fn) + '&ln=' + encodeURIComponent(ln))
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.error || !data.records || data.records.length === 0) {
-                            modalBody.innerHTML = '<div class="text-center text-muted py-4"><i class="fa-solid fa-inbox fa-2x mb-2 opacity-25"></i><p>No records found.</p></div>';
-                            return;
-                        }
-
-                        const recs = data.records;
-                        const latest = recs[0];
-                        const isMalnourished = latest.classification !== 'Normal Weight';
-
-                        function getBadge(cls) {
-                            const map = { 'Underweight':'badge-underweight', 'Normal Weight':'badge-normal', 'Overweight':'badge-overweight', 'Obese':'badge-obese' };
-                            return map[cls] || 'badge-obese';
-                        }
-
-                        function getAlertType(cls) {
-                            if (cls === 'Normal Weight') return '';
-                            if (cls === 'Underweight') return 'Underweight – Malnourished';
-                            if (cls === 'Overweight') return 'Overweight – At Risk';
-                            return 'Obese – High Risk';
-                        }
-
-                        let html = '';
-
-                        // Malnourishment alert for latest record
-                        if (isMalnourished) {
-                            const alertColor = latest.classification === 'Underweight' ? '#c0392b' : (latest.classification === 'Overweight' ? '#e67e22' : '#8e44ad');
-                            const alertBg = latest.classification === 'Underweight' ? '#fff5f5' : (latest.classification === 'Overweight' ? '#fff8f0' : '#faf0ff');
-                            html += '<div style="background:' + alertBg + ';border-left:4px solid ' + alertColor + ';border-radius:8px;padding:12px 16px;margin-bottom:16px;">';
-                            html += '<div style="color:' + alertColor + ';font-weight:700;font-size:0.9rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i> ' + getAlertType(latest.classification) + '</div>';
-                            html += '<div class="text-muted small mt-1">Latest BMI: <b>' + latest.bmi + '</b> — Recorded on ' + formatDate(latest.created_at) + '</div>';
-                            html += '</div>';
-                        }
-
-                        // Latest record card
-                        html += '<div class="card border-0 shadow-sm rounded-3 mb-3" style="border-left:4px solid #78bc27 !important;">';
-                        html += '<div class="card-body p-3">';
-                        html += '<div class="d-flex justify-content-between align-items-center mb-2">';
-                        html += '<span class="fw-bold small text-success"><i class="fa-solid fa-star me-1"></i>Latest Record</span>';
-                        html += '<span class="badge rounded-pill ' + getBadge(latest.classification) + '">' + latest.classification + '</span>';
-                        html += '</div>';
-                        html += buildRecordDetails(latest);
-                        html += '</div></div>';
-
-                        // Previous records
-                        if (recs.length > 1) {
-                            html += '<h6 class="fw-bold small text-muted mt-4 mb-3"><i class="fa-solid fa-history me-1"></i>Previous Records (' + (recs.length - 1) + ')</h6>';
-                            for (let i = 1; i < recs.length; i++) {
-                                const r = recs[i];
-                                const prevMalnourished = r.classification !== 'Normal Weight';
-                                const borderColor = prevMalnourished ? '#e74c3c' : '#dee2e6';
-                                html += '<div class="card border-0 shadow-sm rounded-3 mb-2" style="border-left:4px solid ' + borderColor + ' !important;">';
-                                html += '<div class="card-body p-3">';
-                                html += '<div class="d-flex justify-content-between align-items-center mb-2">';
-                                html += '<span class="text-muted small">' + formatDate(r.created_at) + '</span>';
-                                html += '<span class="badge rounded-pill ' + getBadge(r.classification) + '">' + r.classification + '</span>';
-                                if (prevMalnourished) html += ' <i class="fa-solid fa-triangle-exclamation text-danger" style="font-size:0.7rem;" title="' + getAlertType(r.classification) + '"></i>';
-                                html += '</div>';
-                                html += buildRecordDetails(r);
-                                html += '</div></div>';
-                            }
-                        } else {
-                            html += '<div class="text-center text-muted small py-3 mt-3" style="background:#f8f9fa;border-radius:8px;"><i class="fa-solid fa-info-circle me-1"></i>This is the only record for this student.</div>';
-                        }
-
-                        modalBody.innerHTML = html;
-                    })
-                    .catch(() => {
-                        modalBody.innerHTML = '<div class="text-center text-danger py-4"><i class="fa-solid fa-circle-exclamation fa-2x mb-2"></i><p>Failed to load records.</p></div>';
-                    });
+        function bindNameLinks() {
+            document.querySelectorAll('.student-name-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const fn = this.dataset.fn, ln = this.dataset.ln, mid = this.dataset.mid;
+                    const fullName = fn + ' ' + mid + ' ' + ln;
+                    modalLabel.innerHTML = '<i class="fa-solid fa-clock-rotate-left me-2"></i>' + fullName;
+                    modalBody.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-success" role="status"></div><p class="text-muted small mt-2">Loading...</p></div>';
+                    historyModal.show();
+                    fetch('get_student_history.php?fn=' + encodeURIComponent(fn) + '&ln=' + encodeURIComponent(ln))
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.error || !data.records || data.records.length === 0) { modalBody.innerHTML = '<div class="text-center text-muted py-4"><i class="fa-solid fa-inbox fa-2x mb-2 opacity-25"></i><p>No records found.</p></div>'; return; }
+                            const recs = data.records, latest = recs[0], isMal = latest.classification !== 'Normal Weight';
+                            function getBadge(c) { return {Underweight:'badge-underweight','Normal Weight':'badge-normal',Overweight:'badge-overweight',Obese:'badge-obese'}[c]||'badge-obese'; }
+                            function getAlert(c) { if(c==='Normal Weight')return''; if(c==='Underweight')return'Underweight â€“ Malnourished'; if(c==='Overweight')return'Overweight â€“ At Risk'; return'Obese â€“ High Risk'; }
+                            let h = '';
+                            if (isMal) { const ac = latest.classification==='Underweight'?'#c0392b':(latest.classification==='Overweight'?'#e67e22':'#8e44ad'); const ab = latest.classification==='Underweight'?'#fff5f5':(latest.classification==='Overweight'?'#fff8f0':'#faf0ff'); h += '<div style="background:'+ab+';border-left:4px solid '+ac+';border-radius:8px;padding:12px 16px;margin-bottom:16px;"><div style="color:'+ac+';font-weight:700;font-size:0.9rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i> '+getAlert(latest.classification)+'</div><div class="text-muted small mt-1">Latest BMI: <b>'+latest.bmi+'</b> â€” '+formatDate(latest.created_at)+'</div></div>'; }
+                            h += '<div class="card border-0 shadow-sm rounded-3 mb-3" style="border-left:4px solid #78bc27 !important;"><div class="card-body p-3"><div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-bold small text-success"><i class="fa-solid fa-star me-1"></i>Latest</span><span class="badge rounded-pill '+getBadge(latest.classification)+'">'+latest.classification+'</span></div>'+buildDet(latest)+'</div></div>';
+                            if (recs.length > 1) { h += '<h6 class="fw-bold small text-muted mt-4 mb-3"><i class="fa-solid fa-history me-1"></i>Previous ('+( recs.length-1)+')</h6>'; for (let i=1;i<recs.length;i++) { const r=recs[i],pm=r.classification!=='Normal Weight',bc=pm?'#e74c3c':'#dee2e6'; h+='<div class="card border-0 shadow-sm rounded-3 mb-2" style="border-left:4px solid '+bc+' !important;"><div class="card-body p-3"><div class="d-flex justify-content-between align-items-center mb-2"><span class="text-muted small">'+formatDate(r.created_at)+'</span><span class="badge rounded-pill '+getBadge(r.classification)+'">'+r.classification+'</span></div>'+buildDet(r)+'</div></div>'; } }
+                            else h += '<div class="text-center text-muted small py-3 mt-3" style="background:#f8f9fa;border-radius:8px;"><i class="fa-solid fa-info-circle me-1"></i>Only record for this student.</div>';
+                            modalBody.innerHTML = h;
+                        }).catch(() => { modalBody.innerHTML = '<div class="text-center text-danger py-4"><i class="fa-solid fa-circle-exclamation fa-2x mb-2"></i><p>Failed to load.</p></div>'; });
+                });
             });
-        });
-
-        function buildRecordDetails(r) {
-            let h = '<div class="row g-2 small">';
-            h += '<div class="col-6 col-md-3"><span class="text-muted">Gender:</span> <b>' + esc(r.gender) + '</b></div>';
-            h += '<div class="col-6 col-md-3"><span class="text-muted">Height:</span> <b>' + esc(r.height) + ' ' + esc(r.height_unit) + '</b></div>';
-            h += '<div class="col-6 col-md-3"><span class="text-muted">Weight:</span> <b>' + esc(r.weight) + ' ' + esc(r.weight_unit) + '</b></div>';
-            h += '<div class="col-6 col-md-3"><span class="text-muted">BMI:</span> <b>' + r.bmi + '</b></div>';
-            if (r.guardian_name) h += '<div class="col-12 mt-1"><span class="text-muted">Guardian:</span> ' + esc(r.guardian_name) + '</div>';
-            h += '</div>';
-            return h;
         }
+        function buildDet(r) { let h='<div class="row g-2 small">'; h+='<div class="col-6 col-md-3"><span class="text-muted">Gender:</span> <b>'+esc(r.gender)+'</b></div>'; h+='<div class="col-6 col-md-3"><span class="text-muted">Height:</span> <b>'+esc(r.height)+' '+esc(r.height_unit)+'</b></div>'; h+='<div class="col-6 col-md-3"><span class="text-muted">Weight:</span> <b>'+esc(r.weight)+' '+esc(r.weight_unit)+'</b></div>'; h+='<div class="col-6 col-md-3"><span class="text-muted">BMI:</span> <b>'+r.bmi+'</b></div>'; if(r.guardian_name) h+='<div class="col-12 mt-1"><span class="text-muted">Guardian:</span> '+esc(r.guardian_name)+'</div>'; h+='</div>'; return h; }
 
-        function formatDate(d) {
-            const dt = new Date(d);
-            return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        }
-
-        function esc(s) {
-            if (!s) return '';
-            const el = document.createElement('span');
-            el.textContent = s;
-            return el.innerHTML;
-        }
-
-        // Edit Record Modal
+        // â”€â”€ Edit Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         const editModal = new bootstrap.Modal(document.getElementById('editRecordModal'));
-
-        document.querySelectorAll('.edit-record-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.getElementById('edit_id').value = this.dataset.id;
-                document.getElementById('edit_fn').value = this.dataset.fn;
-                document.getElementById('edit_ln').value = this.dataset.ln;
-                document.getElementById('edit_mid').value = this.dataset.mid;
-                document.getElementById('edit_gender').value = this.dataset.gender;
-                document.getElementById('edit_height').value = this.dataset.height;
-                document.getElementById('edit_hunit').value = this.dataset.hunit;
-                document.getElementById('edit_weight').value = this.dataset.weight;
-                document.getElementById('edit_wunit').value = this.dataset.wunit;
-                document.getElementById('edit_guardian').value = this.dataset.guardian;
-                document.getElementById('edit_gnum').value = this.dataset.gnum;
-                document.getElementById('edit_gemail').value = this.dataset.gemail;
-                document.getElementById('editSuccessMsg').classList.add('d-none');
-                document.getElementById('editErrorMsg').classList.add('d-none');
-                editModal.show();
+        function bindEditBtns() {
+            document.querySelectorAll('.edit-record-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    ['id','fn','ln','mid','gender','height','hunit','weight','wunit','guardian','gnum','gemail'].forEach(k => {
+                        const el = document.getElementById('edit_' + (k==='id'?'id':k));
+                        if (el) el.value = this.dataset[k] || '';
+                    });
+                    document.getElementById('edit_id').value = this.dataset.id;
+                    document.getElementById('edit_fn').value = this.dataset.fn;
+                    document.getElementById('edit_ln').value = this.dataset.ln;
+                    document.getElementById('edit_mid').value = this.dataset.mid;
+                    document.getElementById('edit_gender').value = this.dataset.gender;
+                    document.getElementById('edit_height').value = this.dataset.height;
+                    document.getElementById('edit_hunit').value = this.dataset.hunit;
+                    document.getElementById('edit_weight').value = this.dataset.weight;
+                    document.getElementById('edit_wunit').value = this.dataset.wunit;
+                    document.getElementById('edit_guardian').value = this.dataset.guardian;
+                    document.getElementById('edit_gnum').value = this.dataset.gnum;
+                    document.getElementById('edit_gemail').value = this.dataset.gemail;
+                    document.getElementById('editSuccessMsg').classList.add('d-none');
+                    document.getElementById('editErrorMsg').classList.add('d-none');
+                    editModal.show();
+                });
             });
-        });
+        }
 
-        // Profile Modal
+        // â”€â”€ Delete Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        function bindDeleteBtns() {
+            document.querySelectorAll('.delete-record-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    if (!confirm('Delete this record? Cannot be undone.')) return;
+                    const id = this.dataset.id, row = this.closest('tr');
+                    fetch('delete_record.php', { method:'POST', body: new URLSearchParams({id}) })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success) { row.style.transition='opacity 0.3s'; row.style.opacity='0'; setTimeout(()=>{row.remove();showToast('Record deleted.');},300); }
+                            else showToast(data.error||'Delete failed.','error');
+                        }).catch(() => showToast('Network error.','error'));
+                });
+            });
+        }
+
+        // â”€â”€ Profile Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         const profileModalEl = new bootstrap.Modal(document.getElementById('profileModal'));
         const profileBody = document.getElementById('profileModalBody');
         const passwordModalEl = new bootstrap.Modal(document.getElementById('passwordModal'));
@@ -752,121 +594,48 @@ if ($search !== '') {
         function openProfile() {
             profileBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-success" role="status"></div></div>';
             profileModalEl.show();
-            fetch('get_profile.php')
-                .then(r => r.json())
-                .then(data => {
-                    if (!data.success) { profileBody.innerHTML = '<p class="text-danger text-center">Failed to load profile.</p>'; return; }
-                    const u = data.user;
-                    const joined = new Date(u.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-                    let html = '';
-                    html += '<div class="text-center mb-4">';
-                    html += '<div class="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle" style="width:72px;height:72px;background:#f4ffe8;color:#78bc27;font-size:1.8rem;font-weight:800;">' + esc(u.firstName.charAt(0)) + esc(u.lastName.charAt(0)) + '</div>';
-                    html += '<h6 class="fw-bold mb-0">' + esc(u.firstName) + ' ' + esc(u.lastName) + '</h6>';
-                    html += '<span class="badge bg-success-subtle text-success rounded-pill mt-1" style="font-size:0.75rem;">' + esc(u.role) + '</span>';
-                    html += '</div>';
-                    html += '<form id="profileEditForm">';
-                    html += '<input type="hidden" name="action" value="update_info">';
-                    html += '<div class="row g-3 mb-3">';
-                    html += '<div class="col-6"><label class="form-label small fw-semibold text-muted">First Name</label><input type="text" class="form-control form-control-sm" name="firstName" value="' + esc(u.firstName) + '" required></div>';
-                    html += '<div class="col-6"><label class="form-label small fw-semibold text-muted">Last Name</label><input type="text" class="form-control form-control-sm" name="lastName" value="' + esc(u.lastName) + '" required></div>';
-                    html += '</div>';
-                    html += '<div class="mb-3"><label class="form-label small fw-semibold text-muted">Email</label><input type="email" class="form-control form-control-sm" name="email" value="' + esc(u.email) + '" required></div>';
-                    html += '<div class="mb-3"><label class="form-label small fw-semibold text-muted">Role</label><input type="text" class="form-control form-control-sm" value="' + esc(u.role) + '" disabled></div>';
-                    html += '<div class="d-flex justify-content-between align-items-center small text-muted mb-3">';
-                    html += '<span><i class="fa-solid fa-calendar me-1"></i>Joined: ' + joined + '</span>';
-                    if (u.consent_agreed == 1) html += '<span class="text-success"><i class="fa-solid fa-shield-check me-1"></i>Consent Given</span>';
-                    html += '</div>';
-                    html += '<button type="submit" class="btn btn-green w-100 py-2"><i class="fa-solid fa-floppy-disk me-2"></i>Save Changes</button>';
-                    html += '</form>';
-                    profileBody.innerHTML = html;
-
-                    document.getElementById('profileEditForm').addEventListener('submit', function(e) {
-                        e.preventDefault();
-                        fetch('update_profile.php', { method: 'POST', body: new FormData(this) })
-                            .then(r => r.json())
-                            .then(res => {
-                                if (res.success) {
-                                    profileModalEl.hide();
-                                    showToast('Profile updated successfully!');
-                                    setTimeout(() => location.reload(), 1200);
-                                } else {
-                                    showToast(res.error || 'Update failed.', 'error');
-                                }
-                            })
-                            .catch(() => showToast('Network error.', 'error'));
-                    });
-                })
-                .catch(() => { profileBody.innerHTML = '<p class="text-danger text-center">Failed to load profile.</p>'; });
+            fetch('get_profile.php').then(r=>r.json()).then(data => {
+                if (!data.success) { profileBody.innerHTML = '<p class="text-danger text-center">Failed to load.</p>'; return; }
+                const u = data.user, joined = new Date(u.created_at).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+                let h = '<div class="text-center mb-4"><div class="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle" style="width:72px;height:72px;background:#f4ffe8;color:#78bc27;font-size:1.8rem;font-weight:800;">'+esc(u.firstName.charAt(0))+esc(u.lastName.charAt(0))+'</div><h6 class="fw-bold mb-0">'+esc(u.firstName)+' '+esc(u.lastName)+'</h6><span class="badge bg-success-subtle text-success rounded-pill mt-1" style="font-size:0.75rem;">'+esc(u.role)+'</span></div>';
+                h += '<form id="profileEditForm"><input type="hidden" name="action" value="update_info"><div class="row g-3 mb-3"><div class="col-6"><label class="form-label small fw-semibold text-muted">First Name</label><input type="text" class="form-control form-control-sm" name="firstName" value="'+esc(u.firstName)+'" required></div><div class="col-6"><label class="form-label small fw-semibold text-muted">Last Name</label><input type="text" class="form-control form-control-sm" name="lastName" value="'+esc(u.lastName)+'" required></div></div>';
+                h += '<div class="mb-3"><label class="form-label small fw-semibold text-muted">Email</label><input type="email" class="form-control form-control-sm" name="email" value="'+esc(u.email)+'" required></div>';
+                h += '<div class="mb-3"><label class="form-label small fw-semibold text-muted">Role</label><input type="text" class="form-control form-control-sm" value="'+esc(u.role)+'" disabled></div>';
+                h += '<div class="d-flex justify-content-between align-items-center small text-muted mb-3"><span><i class="fa-solid fa-calendar me-1"></i>Joined: '+joined+'</span>';
+                if (u.consent_agreed==1) h += '<span class="text-success"><i class="fa-solid fa-shield-check me-1"></i>Consent</span>';
+                h += '</div><button type="submit" class="btn btn-green w-100 py-2"><i class="fa-solid fa-floppy-disk me-2"></i>Save</button></form>';
+                profileBody.innerHTML = h;
+                document.getElementById('profileEditForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    fetch('update_profile.php',{method:'POST',body:new FormData(this)}).then(r=>r.json()).then(res=>{
+                        if(res.success){profileModalEl.hide();showToast('Profile updated!');setTimeout(()=>location.reload(),1200);}
+                        else showToast(res.error||'Failed.','error');
+                    }).catch(()=>showToast('Network error.','error'));
+                });
+            }).catch(()=>{profileBody.innerHTML='<p class="text-danger text-center">Failed.</p>';});
         }
 
         document.getElementById('openProfileBtn').addEventListener('click', e => { e.preventDefault(); openProfile(); });
         document.getElementById('openProfileBtnMobile').addEventListener('click', e => { e.preventDefault(); bootstrap.Offcanvas.getInstance(document.getElementById('mobileSidebar'))?.hide(); openProfile(); });
-
         function openPassword() { passwordModalEl.show(); }
         document.getElementById('openPasswordBtn').addEventListener('click', e => { e.preventDefault(); openPassword(); });
         document.getElementById('openPasswordBtnMobile').addEventListener('click', e => { e.preventDefault(); bootstrap.Offcanvas.getInstance(document.getElementById('mobileSidebar'))?.hide(); openPassword(); });
 
         document.getElementById('changePasswordForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            fetch('update_profile.php', { method: 'POST', body: new FormData(this) })
-                .then(r => r.json())
-                .then(res => {
-                    if (res.success) {
-                        passwordModalEl.hide();
-                        this.reset();
-                        showToast('Password changed successfully!');
-                    } else {
-                        showToast(res.error || 'Password change failed.', 'error');
-                    }
-                })
-                .catch(() => showToast('Network error.', 'error'));
+            fetch('update_profile.php',{method:'POST',body:new FormData(this)}).then(r=>r.json()).then(res=>{
+                if(res.success){passwordModalEl.hide();this.reset();showToast('Password changed!');}
+                else showToast(res.error||'Failed.','error');
+            }).catch(()=>showToast('Network error.','error'));
         });
 
-        // Delete Record
-        document.querySelectorAll('.delete-record-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                if (!confirm('Are you sure you want to delete this record? This cannot be undone.')) return;
-                const id = this.dataset.id;
-                const row = this.closest('tr');
-                fetch('delete_record.php', {
-                    method: 'POST',
-                    body: new URLSearchParams({ id: id })
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        row.style.transition = 'opacity 0.3s';
-                        row.style.opacity = '0';
-                        setTimeout(() => { row.remove(); showToast('Record deleted successfully.'); }, 300);
-                    } else {
-                        showToast(data.error || 'Delete failed.', 'error');
-                    }
-                })
-                .catch(() => showToast('Network error.', 'error'));
-            });
-        });
-
-        // Edit Record - use toast instead of inline alerts
+        // â”€â”€ Edit Form Submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         document.getElementById('editRecordForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            const formData = new FormData(this);
-            fetch('update_record.php', { method: 'POST', body: formData })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        editModal.hide();
-                        showToast('Record updated! BMI: ' + data.bmi + ' (' + data.classification + ')');
-                        setTimeout(() => location.reload(), 1500);
-                    } else {
-                        document.getElementById('editErrorText').textContent = data.error || 'Update failed.';
-                        document.getElementById('editErrorMsg').classList.remove('d-none');
-                        document.getElementById('editSuccessMsg').classList.add('d-none');
-                    }
-                })
-                .catch(() => {
-                    document.getElementById('editErrorText').textContent = 'Network error. Try again.';
-                    document.getElementById('editErrorMsg').classList.remove('d-none');
-                });
+            fetch('update_record.php',{method:'POST',body:new FormData(this)}).then(r=>r.json()).then(data=>{
+                if(data.success){editModal.hide();showToast('Updated! BMI: '+data.bmi+' ('+data.classification+')');setTimeout(()=>loadRecords(),800);}
+                else{document.getElementById('editErrorText').textContent=data.error||'Failed.';document.getElementById('editErrorMsg').classList.remove('d-none');document.getElementById('editSuccessMsg').classList.add('d-none');}
+            }).catch(()=>{document.getElementById('editErrorText').textContent='Network error.';document.getElementById('editErrorMsg').classList.remove('d-none');});
         });
     </script>
 </body>

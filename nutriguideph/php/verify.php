@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once 'auth.php';
+secureSessionStart();
 
 if (!isset($_SESSION['verify_email'])) {
     header("Location: ../pages/signin.html");
@@ -19,13 +20,7 @@ if (empty($code) || strlen($code) !== 6) {
     exit();
 }
 
-require_once 'config.php';
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-
-if ($conn->connect_error) {
-    header("Location: ../pages/verify.html?error=db_error");
-    exit();
-}
+$conn = getDB();
 
 $stmt = $conn->prepare("SELECT verification_code, code_expires FROM accounts WHERE email = ? AND is_verified = 0");
 $stmt->bind_param("s", $email);

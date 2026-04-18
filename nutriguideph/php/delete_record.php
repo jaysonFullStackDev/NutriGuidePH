@@ -1,14 +1,9 @@
 <?php
-session_start();
+require_once 'auth.php';
+secureSessionStart();
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['error' => 'Unauthorized']);
-    exit();
-}
-
-require_once 'auth.php';
-if (!isAdmin()) {
+if (!isset($_SESSION['user_id']) || !isAdmin()) {
     echo json_encode(['error' => 'Permission denied']);
     exit();
 }
@@ -19,29 +14,24 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $id = intval($_POST['id'] ?? 0);
-if ($id === 0) {
-    echo json_encode(['error' => 'Invalid record ID']);
-    exit();
-}
+if ($id === 0) { echo json_encode(['error' => 'Invalid record ID']); exit(); }
 
-require_once 'config.php';
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-if ($conn->connect_error) {
-    echo json_encode(['error' => 'Database error']);
-    exit();
-}
+$conn = getDB();
 
-mysqli_report(MYSQLI_REPORT_OFF);
+// Get record details before deleting for audit
+$info = $conn->query("SELECT std_first_name, std_last_name FROM stdRecord WHERE id=$id");
+$name = $info->num_rows ? $info->fetch_assoc() : null;
+$detail = $name ? $name['std_first_name'] . ' ' . $name['std_last_name'] : 'Unknown';
 
 $stmt = $conn->prepare("DELETE FROM stdRecord WHERE id = ?");
 $stmt->bind_param("i", $id);
 
 if ($stmt->execute() && $stmt->affected_rows > 0) {
+    auditLog('delete_record', 'stdRecord', $id, $detail);
     echo json_encode(['success' => true]);
 } else {
-    echo json_encode(['error' => 'Record not found or already deleted']);
+    echo json_encode(['error' => 'Record not found']);
 }
-
 $stmt->close();
 $conn->close();
 ?>

@@ -1,16 +1,9 @@
-<?php
-session_start();
-
-if (!isset($_SESSION['user_id'])) {
-    header("Location: ../pages/signin.html");
-    exit();
-}
-
+﻿<?php
 require_once 'auth.php';
+secureSessionStart();
 checkAccess(['Employee', 'Admin', 'Super Admin']);
 
-require_once 'config.php';
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+$conn = getDB();
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
@@ -84,7 +77,7 @@ $today_feedings = $conn->query("SELECT COUNT(*) as c FROM feedingRecord WHERE fe
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NutriPh Guide – Feeding Program</title>
+    <title>NutriPh Guide â€“ Feeding Program</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
@@ -93,56 +86,8 @@ $today_feedings = $conn->query("SELECT COUNT(*) as c FROM feedingRecord WHERE fe
 <body style="background: linear-gradient(135deg, rgba(45,90,14,0.7), rgba(61,107,15,0.6)), url('../images/happy.jpg') center/cover no-repeat fixed; min-height:100vh;">
 
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
-        <div class="container-fluid px-3 px-lg-5">
-            <a class="navbar-brand d-flex align-items-center gap-2" href="../index.php">
-                <img src="../images/logo.png" alt="Logo" height="40">
-                <span class="fw-bold brand-text">NutriPh Guide</span>
-            </a>
-            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav ms-auto gap-1 align-items-center">
-                    <li class="nav-item"><a class="nav-link" href="dashboard.php">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="feeding_program.php">Feeding Program</a></li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle text-success-light fw-semibold" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fa-solid fa-circle-user me-1"></i><?= htmlspecialchars($_SESSION['firstName']) ?>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-3" style="min-width:200px;">
-                            <li class="px-3 py-2">
-                                <div class="small fw-bold"><?= htmlspecialchars($_SESSION['firstName']) ?></div>
-                                <div class="text-muted" style="font-size:0.75rem;"><?= htmlspecialchars($_SESSION['role'] ?? 'User') ?></div>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item small" href="dashboard.php#profile"><i class="fa-solid fa-user-pen me-2 text-success"></i>My Profile</a></li>
-                            <li><a class="dropdown-item small" href="dashboard.php#password"><i class="fa-solid fa-key me-2 text-warning"></i>Change Password</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item small text-danger" href="logout.php"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <?php $activePage = 'feeding'; include 'navbar.php'; ?>
 
-    <!-- Mobile Offcanvas -->
-    <div class="offcanvas offcanvas-end text-bg-dark" id="mobileSidebar">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title brand-text">NutriPh Guide</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-        </div>
-        <div class="offcanvas-body">
-            <ul class="navbar-nav gap-2">
-                <li class="nav-item"><a class="nav-link text-white" href="dashboard.php"><i class="fa-solid fa-gauge me-2"></i>Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link text-white" href="feeding_program.php"><i class="fa-solid fa-utensils me-2"></i>Feeding Program</a></li>
-                <li class="nav-item"><a class="nav-link text-white" href="dashboard.php#profile"><i class="fa-solid fa-user-pen me-2"></i>My Profile</a></li>
-                <li class="nav-item"><a class="nav-link text-white" href="#footer"><i class="fa-solid fa-circle-info me-2"></i>About Us</a></li>
-                <li class="nav-item"><a class="nav-link text-white" href="logout.php"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
-            </ul>
-        </div>
-    </div>
 
     <!-- Content -->
     <div class="container-fluid px-3 px-lg-5 py-3 py-lg-4">
@@ -277,10 +222,10 @@ $today_feedings = $conn->query("SELECT COUNT(*) as c FROM feedingRecord WHERE fe
                                         <div class="small fw-semibold"><?= htmlspecialchars($f['std_first_name'] . ' ' . $f['std_mid_initial'] . ' ' . $f['std_last_name']) ?></div>
                                         <div class="text-muted" style="font-size:0.75rem;">
                                             <i class="fa-solid fa-calendar me-1"></i><?= date('M d, Y', strtotime($f['feed_date'])) ?>
-                                            <span class="mx-1">·</span>
+                                            <span class="mx-1">Â·</span>
                                             <i class="fa-solid fa-utensils me-1"></i><?= htmlspecialchars($f['meal_type']) ?>
                                             <?php if ($f['notes']): ?>
-                                                <span class="mx-1">·</span>
+                                                <span class="mx-1">Â·</span>
                                                 <?= htmlspecialchars($f['notes']) ?>
                                             <?php endif; ?>
                                         </div>

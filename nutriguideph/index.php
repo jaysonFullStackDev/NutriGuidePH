@@ -1,4 +1,4 @@
-<?php session_start(); ?>
+<?php require_once 'php/auth.php'; secureSessionStart(); ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>

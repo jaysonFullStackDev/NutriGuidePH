@@ -1,14 +1,9 @@
 <?php
-session_start();
+require_once 'auth.php';
+secureSessionStart();
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['error' => 'Unauthorized']);
-    exit();
-}
-
-require_once 'auth.php';
-if (!isAdmin()) {
+if (!isset($_SESSION['user_id']) || !isAdmin()) {
     echo json_encode(['error' => 'Permission denied']);
     exit();
 }
@@ -32,44 +27,34 @@ $g_num   = trim($_POST['guardian_number'] ?? '');
 $g_email = trim($_POST['guardian_email'] ?? '');
 
 if ($id === 0 || empty($fn) || empty($ln) || $height <= 0 || $weight <= 0) {
-    echo json_encode(['error' => 'Missing required fields']);
-    exit();
+    echo json_encode(['error' => 'Missing required fields']); exit();
 }
+if (!validateHeight($height, $h_unit)) { echo json_encode(['error' => 'Invalid height']); exit(); }
+if (!validateWeight($weight, $w_unit)) { echo json_encode(['error' => 'Invalid weight']); exit(); }
 
-// Recalculate BMI
-if ($h_unit == 'cm')        { $h_m = $height / 100; }
-elseif ($h_unit == 'm')     { $h_m = $height; }
-elseif ($h_unit == 'inch')  { $h_m = $height * 0.0254; }
-else                        { $h_m = $height * 0.3048; }
+if ($h_unit == 'cm') $h_m = $height / 100;
+elseif ($h_unit == 'm') $h_m = $height;
+elseif ($h_unit == 'inch') $h_m = $height * 0.0254;
+else $h_m = $height * 0.3048;
 
 $w_kg = ($w_unit == 'lbs') ? round($weight * 0.453592, 2) : $weight;
 $bmi  = round($w_kg / ($h_m * $h_m), 1);
 
-if      ($bmi < 18.5)  { $classification = 'Underweight'; }
-elseif  ($bmi <= 24.9) { $classification = 'Normal Weight'; }
-elseif  ($bmi <= 29.9) { $classification = 'Overweight'; }
-else                   { $classification = 'Obese'; }
+if ($bmi < 18.5) $classification = 'Underweight';
+elseif ($bmi <= 24.9) $classification = 'Normal Weight';
+elseif ($bmi <= 29.9) $classification = 'Overweight';
+else $classification = 'Obese';
 
-require_once 'config.php';
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-if ($conn->connect_error) {
-    echo json_encode(['error' => 'Database error']);
-    exit();
-}
-
+$conn = getDB();
 $stmt = $conn->prepare("UPDATE stdRecord SET std_first_name=?, std_last_name=?, std_mid_initial=?, gender=?, height=?, height_unit=?, weight=?, weight_unit=?, bmi=?, classification=?, guardian_name=?, guardian_number=?, guardian_email=? WHERE id=?");
 $stmt->bind_param("ssssdsdsdssssi", $fn, $ln, $mid, $gender, $height, $h_unit, $weight, $w_unit, $bmi, $classification, $guardian, $g_num, $g_email, $id);
 
 if ($stmt->execute()) {
-    echo json_encode([
-        'success' => true,
-        'bmi' => $bmi,
-        'classification' => $classification
-    ]);
+    auditLog('update_record', 'stdRecord', $id, "$fn $ln - BMI: $bmi ($classification)");
+    echo json_encode(['success' => true, 'bmi' => $bmi, 'classification' => $classification]);
 } else {
     echo json_encode(['error' => 'Update failed']);
 }
-
 $stmt->close();
 $conn->close();
 ?>

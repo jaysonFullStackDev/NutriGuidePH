@@ -211,7 +211,47 @@ section > .container > p.text-muted {
 .table-success-dark { background-color: var(--green-mid); }
 .table-success-dark th { color: #fff; font-weight: 600; font-size: 0.9rem; }
 .table-responsive { border-radius: var(--radius-md); overflow: hidden; }
-.table td, .table th { font-size: 0.86rem; vertical-align: middle; }
+.table td, .table th { font-size: 0.84rem; vertical-align: middle; white-space: nowrap; }
+.table td.wrap-cell { white-space: normal; }
+
+/* ── Table Action Buttons ──────────────────────────────────── */
+.table .btn-sm {
+    padding: 0.15rem 0.4rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    vertical-align: middle;
+}
+
+.table td.action-cell {
+    white-space: nowrap;
+    text-align: center;
+    width: 1%;
+}
+
+.table th.action-cell {
+    white-space: nowrap;
+    text-align: center;
+    width: 1%;
+}
+
+/* ── Table Compact Alignment ────────────────────────────── */
+.table-hover tbody tr {
+    transition: background-color 0.15s;
+}
+
+.table th {
+    border-bottom: 2px solid #dee2e6;
+    padding: 0.5rem 0.6rem;
+}
+
+.table td {
+    padding: 0.45rem 0.6rem;
+}
+
+.table .badge {
+    font-size: 0.72rem;
+    padding: 0.3em 0.65em;
+}
 
 /* ── Utility Colors ────────────────────────────────────────── */
 .text-success-dark { color: var(--green-dark) !important; }
@@ -319,6 +359,56 @@ section > .container > p.text-muted {
 .student-name-link:hover {
     color: #78bc27 !important;
     background-color: rgba(120, 188, 39, 0.08);
+}
+
+/* ── Pagination ──────────────────────────────────────────── */
+.page-link {
+    color: var(--green-dark);
+    border-color: #dee2e6;
+    font-size: 0.82rem;
+    border-radius: 6px !important;
+    margin: 0 2px;
+}
+
+.page-link:hover {
+    color: #fff;
+    background-color: var(--green-accent);
+    border-color: var(--green-accent);
+}
+
+.page-item.active .page-link {
+    background-color: var(--green-accent);
+    border-color: var(--green-accent);
+    color: #fff;
+}
+
+.page-item.disabled .page-link {
+    color: #aaa;
+}
+
+/* ── Button Loading Spinner ──────────────────────────────── */
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.75;
+}
+
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    right: 12px;
+    margin-top: -8px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: btnSpin 0.6s linear infinite;
+}
+
+@keyframes btnSpin {
+    to { transform: rotate(360deg); }
 }
 
 /* ── Toast Notifications ───────────────────────────────────── */
