@@ -1,0 +1,74 @@
+<?php
+session_start();
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../pages/signin.html");
+    exit();
+}
+
+require_once 'auth.php';
+if (!isAdmin()) {
+    header("Location: dashboard.php");
+    exit();
+}
+
+require_once 'config.php';
+$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+if ($conn->connect_error) { die("Connection failed"); }
+
+$type = $_GET['type'] ?? 'all';
+
+// Set headers for Excel download
+$filename = 'NutriPh_Records_' . date('Y-m-d') . '.xls';
+header('Content-Type: application/vnd.ms-excel');
+header('Content-Disposition: attachment; filename="' . $filename . '"');
+header('Cache-Control: max-age=0');
+
+// Build query based on type
+$where = '';
+if ($type === 'underweight')  $where = "WHERE classification='Underweight'";
+elseif ($type === 'normal')   $where = "WHERE classification='Normal Weight'";
+elseif ($type === 'overweight') $where = "WHERE classification='Overweight'";
+elseif ($type === 'obese')    $where = "WHERE classification='Obese'";
+elseif ($type === 'malnourished') $where = "WHERE classification IN ('Underweight','Overweight','Obese')";
+
+$result = $conn->query("SELECT * FROM stdRecord $where ORDER BY created_at DESC");
+
+// Output as HTML table (Excel reads this natively)
+echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">';
+echo '<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>';
+echo '<x:Name>Student Records</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>';
+echo '</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>';
+echo '<table border="1">';
+echo '<tr style="background-color:#3d6b0f;color:#fff;font-weight:bold;">';
+echo '<td>No.</td><td>Last Name</td><td>First Name</td><td>M.I.</td><td>Gender</td>';
+echo '<td>Height</td><td>Height Unit</td><td>Weight</td><td>Weight Unit</td>';
+echo '<td>BMI</td><td>Classification</td><td>Guardian Name</td><td>Guardian Number</td>';
+echo '<td>Guardian Email</td><td>Date Recorded</td>';
+echo '</tr>';
+
+$n = 1;
+while ($row = $result->fetch_assoc()) {
+    echo '<tr>';
+    echo '<td>' . $n++ . '</td>';
+    echo '<td>' . htmlspecialchars($row['std_last_name']) . '</td>';
+    echo '<td>' . htmlspecialchars($row['std_first_name']) . '</td>';
+    echo '<td>' . htmlspecialchars($row['std_mid_initial']) . '</td>';
+    echo '<td>' . htmlspecialchars($row['gender']) . '</td>';
+    echo '<td>' . $row['height'] . '</td>';
+    echo '<td>' . htmlspecialchars($row['height_unit']) . '</td>';
+    echo '<td>' . $row['weight'] . '</td>';
+    echo '<td>' . htmlspecialchars($row['weight_unit']) . '</td>';
+    echo '<td>' . $row['bmi'] . '</td>';
+    echo '<td>' . htmlspecialchars($row['classification']) . '</td>';
+    echo '<td>' . htmlspecialchars($row['guardian_name']) . '</td>';
+    echo '<td>' . htmlspecialchars($row['guardian_number']) . '</td>';
+    echo '<td>' . htmlspecialchars($row['guardian_email']) . '</td>';
+    echo '<td>' . date('M d, Y', strtotime($row['created_at'])) . '</td>';
+    echo '</tr>';
+}
+
+echo '</table></body></html>';
+
+$conn->close();
+?>

@@ -1,0 +1,16 @@
+# Credentials - NEVER push this
+php/config.php
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# XAMPP / server files
+.htaccess
