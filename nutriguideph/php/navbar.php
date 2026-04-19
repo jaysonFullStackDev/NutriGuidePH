@@ -26,6 +26,7 @@ $navRole = htmlspecialchars($_SESSION['role'] ?? '');
                     <a class="nav-link dropdown-toggle <?= in_array($activePage,['reports','import'])?'active':'' ?>" href="#" role="button" data-bs-toggle="dropdown">Tools</a>
                     <ul class="dropdown-menu border-0 shadow-lg rounded-3">
                         <li><a class="dropdown-item small" href="reports.php"><i class="fa-solid fa-print me-2 text-success"></i>Print Reports</a></li>
+                        <li><a class="dropdown-item small" href="deped_reports.php"><i class="fa-solid fa-file-lines me-2 text-info"></i>DepEd Reports (SBFP/OPT)</a></li>
                         <li><a class="dropdown-item small" href="bulk_import.php"><i class="fa-solid fa-file-import me-2 text-primary"></i>Bulk Import</a></li>
                         <?php if (isSuperAdmin()): ?>
                         <li><hr class="dropdown-divider"></li>
@@ -71,6 +72,7 @@ $navRole = htmlspecialchars($_SESSION['role'] ?? '');
             <li class="nav-item"><a class="nav-link text-white" href="meal_planning.php"><i class="fa-solid fa-calendar-week me-2"></i>Meal Planning</a></li>
             <?php if (isAdmin()): ?>
             <li class="nav-item"><a class="nav-link text-white" href="reports.php"><i class="fa-solid fa-print me-2"></i>Reports</a></li>
+            <li class="nav-item"><a class="nav-link text-white" href="deped_reports.php"><i class="fa-solid fa-file-lines me-2"></i>DepEd Reports</a></li>
             <li class="nav-item"><a class="nav-link text-white" href="bulk_import.php"><i class="fa-solid fa-file-import me-2"></i>Bulk Import</a></li>
             <?php endif; ?>
             <?php if (isSuperAdmin()): ?>

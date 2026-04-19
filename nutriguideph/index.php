@@ -9,6 +9,10 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="css/index.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3d6b0f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
 
@@ -278,8 +282,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script>
-        AOS.init({ duration: 700, once: true });
+    <script>AOS.init({ duration: 700, once: true });
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+    </script>
 
         // Navbar scroll effect
         const nav = document.getElementById('mainNav');

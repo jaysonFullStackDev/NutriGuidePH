@@ -237,6 +237,19 @@ if (isset($_POST['submit_form'])) {
                                 <i class="fa-solid fa-calculator me-2"></i>Calculate BMI & Preview
                             </button>
                         </form>
+
+                        <!-- Photo Upload (separate form, after record is saved) -->
+                        <?php if ($save_type === 'success' && $conn->insert_id): ?>
+                        <form action="upload_photo.php" method="POST" enctype="multipart/form-data" class="mt-3 p-3 rounded-3" style="background:#f8fff0;">
+                            <?= csrfField() ?>
+                            <input type="hidden" name="student_id" value="<?= $conn->insert_id ?>">
+                            <label class="form-label small fw-semibold text-success"><i class="fa-solid fa-camera me-1"></i>Upload Student Photo (optional)</label>
+                            <div class="d-flex gap-2">
+                                <input type="file" class="form-control form-control-sm" name="photo" accept="image/jpeg,image/png,image/webp">
+                                <button class="btn btn-sm btn-outline-success px-3"><i class="fa-solid fa-upload"></i></button>
+                            </div>
+                        </form>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
