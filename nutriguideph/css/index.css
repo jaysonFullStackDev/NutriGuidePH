@@ -489,7 +489,7 @@ html { scroll-behavior: smooth; }
 }
 
 /* ── Dark Mode Toggle Button ──────────────────────────────── */
-#darkModeToggle {
+.dm-toggle {
     color: var(--green-light) !important;
     background: rgba(255,255,255,0.08);
     border: 1px solid rgba(255,255,255,0.15);
@@ -497,17 +497,18 @@ html { scroll-behavior: smooth; }
     padding: 0.35rem 0.9rem !important;
     font-size: 0.82rem;
     transition: all var(--transition);
+    cursor: pointer;
 }
-#darkModeToggle:hover {
+.dm-toggle:hover {
     background: rgba(255,255,255,0.18) !important;
     transform: translateY(-1px);
 }
-[data-theme="dark"] #darkModeToggle {
+[data-theme="dark"] .dm-toggle {
     color: #ffc107 !important;
     background: rgba(255,193,7,0.12);
     border-color: rgba(255,193,7,0.25);
 }
-[data-theme="dark"] #darkModeToggle:hover {
+[data-theme="dark"] .dm-toggle:hover {
     background: rgba(255,193,7,0.2) !important;
 }
 
@@ -521,6 +522,7 @@ html { scroll-behavior: smooth; }
 }
 
 [data-theme="dark"] body { background: var(--dm-bg) !important; color: var(--dm-text); }
+[data-theme="dark"] .navbar { background-color: rgba(22, 33, 62, 0.98) !important; }
 [data-theme="dark"] .card, [data-theme="dark"] .table-card, [data-theme="dark"] .stat-card,
 [data-theme="dark"] .chart-card, [data-theme="dark"] .modal-content { background-color: var(--dm-card) !important; color: var(--dm-text); border-color: var(--dm-border) !important; }
 [data-theme="dark"] .card-body { color: var(--dm-text); }

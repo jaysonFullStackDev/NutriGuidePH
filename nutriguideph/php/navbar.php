@@ -45,9 +45,9 @@ $navRole = htmlspecialchars($_SESSION['role'] ?? '');
                 </li>
                 <?php endif; ?>
                 <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center gap-1" href="#" id="darkModeToggle" title="Toggle Dark Mode">
-                        <i class="fa-solid fa-moon" id="darkModeIcon"></i>
-                        <span class="small fw-semibold" id="darkModeLabel">Dark Mode</span>
+                    <a class="nav-link d-flex align-items-center gap-1 dm-toggle" href="#" onclick="toggleDarkMode(event)" title="Toggle Dark Mode">
+                        <i class="fa-solid fa-moon dm-icon" data-extra=""></i>
+                        <span class="small fw-semibold dm-label">Dark Mode</span>
                     </a>
                 </li>
                 <li class="nav-item dropdown">
@@ -88,7 +88,7 @@ $navRole = htmlspecialchars($_SESSION['role'] ?? '');
             <?php endif; ?>
             <li class="nav-item"><a class="nav-link text-white" href="#" id="openProfileBtnMobile"><i class="fa-solid fa-user-pen me-2"></i>My Profile</a></li>
             <li class="nav-item"><a class="nav-link text-white" href="#" id="openPasswordBtnMobile"><i class="fa-solid fa-key me-2"></i>Change Password</a></li>
-            <li class="nav-item"><a class="nav-link text-white" href="#" id="darkModeToggleMobile"><i class="fa-solid fa-moon me-2" id="darkModeIconMobile"></i><span id="darkModeLabelMobile">Dark Mode</span></a></li>
+            <li class="nav-item"><a class="nav-link text-white" href="#" onclick="toggleDarkMode(event)"><i class="fa-solid fa-moon me-2 dm-icon" data-extra="me-2"></i><span class="dm-label">Dark Mode</span></a></li>
             <li><hr class="border-secondary my-2"></li>
             <li class="nav-item"><a class="nav-link text-white" href="logout.php"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
         </ul>
@@ -96,52 +96,24 @@ $navRole = htmlspecialchars($_SESSION['role'] ?? '');
 </div>
 
 <script>
-(function() {
-    // Apply theme immediately in case <head> script missed
-    if (localStorage.getItem('nutriph_dark') === '1') {
-        document.documentElement.setAttribute('data-theme', 'dark');
-    }
-
-    function updateIcons() {
-        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        var icon = isDark ? 'fa-sun' : 'fa-moon';
-        var text = isDark ? 'Light Mode' : 'Dark Mode';
-        var el = document.getElementById('darkModeIcon');
-        var elM = document.getElementById('darkModeIconMobile');
-        if (el) el.className = 'fa-solid ' + icon;
-        if (elM) elM.className = 'fa-solid ' + icon + ' me-2';
-        var lbl = document.getElementById('darkModeLabel');
-        var lblM = document.getElementById('darkModeLabelMobile');
-        if (lbl) lbl.textContent = text;
-        if (lblM) lblM.textContent = text;
-    }
-
-    function toggle(e) {
-        e.preventDefault();
-        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        if (isDark) {
-            document.documentElement.removeAttribute('data-theme');
-            localStorage.setItem('nutriph_dark', '0');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            localStorage.setItem('nutriph_dark', '1');
-        }
-        updateIcons();
-    }
-
-    function init() {
-        updateIcons();
-        var dt = document.getElementById('darkModeToggle');
-        var dtm = document.getElementById('darkModeToggleMobile');
-        if (dt && !dt._dmBound) { dt.addEventListener('click', toggle); dt._dmBound = true; }
-        if (dtm && !dtm._dmBound) { dtm.addEventListener('click', toggle); dtm._dmBound = true; }
-    }
-
-    // Run init when DOM is ready — handle both cases
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+function toggleDarkMode(e) {
+    e.preventDefault();
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (isDark) {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('nutriph_dark', '0');
     } else {
-        init();
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('nutriph_dark', '1');
     }
-})();
+    _updateDarkIcons();
+}
+function _updateDarkIcons() {
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var icon = isDark ? 'fa-sun' : 'fa-moon';
+    var text = isDark ? 'Light Mode' : 'Dark Mode';
+    document.querySelectorAll('.dm-icon').forEach(function(el) { el.className = 'fa-solid ' + icon + ' ' + el.getAttribute('data-extra'); });
+    document.querySelectorAll('.dm-label').forEach(function(el) { el.textContent = text; });
+}
+_updateDarkIcons();
 </script>
