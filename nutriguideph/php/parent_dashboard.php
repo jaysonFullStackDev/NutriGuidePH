@@ -35,7 +35,7 @@ $stmt2->close();
     <title>NutriPh Guide – Parent Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="../css/index.css?v=2">
+    <link rel="stylesheet" href="../css/index.css?v=3">
     <meta name="csrf-token" content="<?= generateCsrf() ?>">
 </head>
 <body class="page-bg">

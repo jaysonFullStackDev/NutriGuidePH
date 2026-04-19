@@ -43,7 +43,7 @@ foreach ($optData as $o) {
     <title>NutriPh Guide – DepEd Reports</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="../css/index.css?v=2">
+    <link rel="stylesheet" href="../css/index.css?v=3">
     <style>
         @media print { .no-print { display: none !important; } body { background: #fff !important; font-size: 10pt; } .card { box-shadow: none !important; border: 1px solid #ddd !important; } }
         .deped-header { text-align: center; margin-bottom: 15px; }
