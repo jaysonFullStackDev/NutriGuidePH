@@ -124,4 +124,5 @@ function _updateDarkIcons() {
     } catch(err) { console.error('Dark mode icon update error:', err); }
 }
 _updateDarkIcons();
+if('serviceWorker' in navigator){navigator.serviceWorker.register('../sw.js').catch(function(){});}
 </script>
