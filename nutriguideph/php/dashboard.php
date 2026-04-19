@@ -51,7 +51,7 @@ $totalPages = max(1, ceil($totalRecords / $perPage));
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <link rel="stylesheet" href="../css/index.css">
+    <link rel="stylesheet" href="../css/index.css?v=2">
     <meta name="csrf-token" content="<?= generateCsrf() ?>">
 </head>
 <body class="page-bg">
