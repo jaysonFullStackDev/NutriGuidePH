@@ -53,7 +53,7 @@ $isPrint = isset($_GET['print']);
         .report-header p { margin: 2px 0; font-size: 0.9rem; color: #555; }
     </style>
 </head>
-<body style="<?= $isPrint ? 'background:#fff;' : 'background: linear-gradient(135deg, rgba(45,90,14,0.7), rgba(61,107,15,0.6)), url(\'../images/happy.jpg\') center/cover no-repeat fixed; min-height:100vh;' ?>">
+<body class="<?= $isPrint ? '' : 'page-bg' ?>" <?= $isPrint ? 'style="background:#fff;"' : '' ?>>
 
     <?php if (!$isPrint): ?>
     <?php $activePage = 'reports'; include 'navbar.php'; ?>

@@ -30,7 +30,7 @@ $logs = $conn->query("SELECT * FROM audit_log $where ORDER BY created_at DESC LI
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../css/index.css">
 </head>
-<body style="background: linear-gradient(135deg, rgba(45,90,14,0.7), rgba(61,107,15,0.6)), url('../images/happy.jpg') center/cover no-repeat fixed; min-height:100vh;">
+<body class="page-bg">
     <?php $activePage = 'audit'; include 'navbar.php'; ?>
 
 

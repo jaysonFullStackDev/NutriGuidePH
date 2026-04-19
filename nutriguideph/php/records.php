@@ -61,7 +61,7 @@ $canEdit = isAdmin();
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="../css/index.css">
 </head>
-<body style="background: linear-gradient(135deg, rgba(45,90,14,0.7), rgba(61,107,15,0.6)), url('../images/happy.jpg') center/cover no-repeat fixed; min-height:100vh;">
+<body class="page-bg">
 
     <?php $activePage = 'records'; include 'navbar.php'; ?>
 
