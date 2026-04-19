@@ -45,8 +45,9 @@ $navRole = htmlspecialchars($_SESSION['role'] ?? '');
                 </li>
                 <?php endif; ?>
                 <li class="nav-item">
-                    <a class="nav-link" href="#" id="darkModeToggle" title="Toggle Dark Mode" style="font-size:1.15rem;">
+                    <a class="nav-link d-flex align-items-center gap-1" href="#" id="darkModeToggle" title="Toggle Dark Mode">
                         <i class="fa-solid fa-moon" id="darkModeIcon"></i>
+                        <span class="small fw-semibold" id="darkModeLabel">Dark Mode</span>
                     </a>
                 </li>
                 <li class="nav-item dropdown">
@@ -101,12 +102,15 @@ $navRole = htmlspecialchars($_SESSION['role'] ?? '');
 
     function updateIcons(isDark) {
         var icon = isDark ? 'fa-sun' : 'fa-moon';
+        var text = isDark ? 'Light Mode' : 'Dark Mode';
         var el = document.getElementById('darkModeIcon');
         var elM = document.getElementById('darkModeIconMobile');
         if (el) el.className = 'fa-solid ' + icon;
         if (elM) elM.className = 'fa-solid ' + icon + ' me-2';
-        var lbl = document.getElementById('darkModeLabelMobile');
-        if (lbl) lbl.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+        var lbl = document.getElementById('darkModeLabel');
+        var lblM = document.getElementById('darkModeLabelMobile');
+        if (lbl) lbl.textContent = text;
+        if (lblM) lblM.textContent = text;
     }
 
     function toggle(e) {

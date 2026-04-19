@@ -491,15 +491,25 @@ html { scroll-behavior: smooth; }
 /* ── Dark Mode Toggle Button ──────────────────────────────── */
 #darkModeToggle {
     color: var(--green-light) !important;
-    opacity: 0.85;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 20px !important;
+    padding: 0.35rem 0.9rem !important;
+    font-size: 0.82rem;
     transition: all var(--transition);
 }
 #darkModeToggle:hover {
-    opacity: 1;
-    transform: scale(1.15);
-    background-color: rgba(255,255,255,0.12) !important;
+    background: rgba(255,255,255,0.18) !important;
+    transform: translateY(-1px);
 }
-[data-theme="dark"] #darkModeToggle { color: #ffc107 !important; }
+[data-theme="dark"] #darkModeToggle {
+    color: #ffc107 !important;
+    background: rgba(255,193,7,0.12);
+    border-color: rgba(255,193,7,0.25);
+}
+[data-theme="dark"] #darkModeToggle:hover {
+    background: rgba(255,193,7,0.2) !important;
+}
 
 /* ── Dark Mode ───────────────────────────────────────────── */
 [data-theme="dark"] {
