@@ -44,6 +44,7 @@ $totalPages = max(1, ceil($totalRecords / $perPage));
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>if(localStorage.getItem('nutriph_dark')==='1')document.documentElement.setAttribute('data-theme','dark');</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NutriPh Guide – Dashboard</title>

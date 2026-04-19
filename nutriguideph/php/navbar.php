@@ -97,10 +97,13 @@ $navRole = htmlspecialchars($_SESSION['role'] ?? '');
 
 <script>
 (function() {
-    var saved = localStorage.getItem('nutriph_dark') === '1';
-    if (saved) document.documentElement.setAttribute('data-theme', 'dark');
+    // Apply theme immediately in case <head> script missed
+    if (localStorage.getItem('nutriph_dark') === '1') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+    }
 
-    function updateIcons(isDark) {
+    function updateIcons() {
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         var icon = isDark ? 'fa-sun' : 'fa-moon';
         var text = isDark ? 'Light Mode' : 'Dark Mode';
         var el = document.getElementById('darkModeIcon');
@@ -123,15 +126,22 @@ $navRole = htmlspecialchars($_SESSION['role'] ?? '');
             document.documentElement.setAttribute('data-theme', 'dark');
             localStorage.setItem('nutriph_dark', '1');
         }
-        updateIcons(!isDark);
+        updateIcons();
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        updateIcons(saved);
+    function init() {
+        updateIcons();
         var dt = document.getElementById('darkModeToggle');
         var dtm = document.getElementById('darkModeToggleMobile');
-        if (dt) dt.addEventListener('click', toggle);
-        if (dtm) dtm.addEventListener('click', toggle);
-    });
+        if (dt && !dt._dmBound) { dt.addEventListener('click', toggle); dt._dmBound = true; }
+        if (dtm && !dtm._dmBound) { dtm.addEventListener('click', toggle); dtm._dmBound = true; }
+    }
+
+    // Run init when DOM is ready — handle both cases
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
 })();
 </script>
