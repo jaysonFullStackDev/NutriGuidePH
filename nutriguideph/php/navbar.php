@@ -53,6 +53,7 @@ $navRole = htmlspecialchars($_SESSION['role'] ?? '');
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item small" href="#" id="openProfileBtn"><i class="fa-solid fa-user-pen me-2 text-success"></i>My Profile</a></li>
                         <li><a class="dropdown-item small" href="#" id="openPasswordBtn"><i class="fa-solid fa-key me-2 text-warning"></i>Change Password</a></li>
+                        <li><a class="dropdown-item small" href="#" id="darkModeToggle"><i class="fa-solid fa-moon me-2 text-info"></i><span id="darkModeLabel">Dark Mode</span></a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item small text-danger" href="logout.php"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
                     </ul>
@@ -82,7 +83,45 @@ $navRole = htmlspecialchars($_SESSION['role'] ?? '');
             <?php endif; ?>
             <li class="nav-item"><a class="nav-link text-white" href="#" id="openProfileBtnMobile"><i class="fa-solid fa-user-pen me-2"></i>My Profile</a></li>
             <li class="nav-item"><a class="nav-link text-white" href="#" id="openPasswordBtnMobile"><i class="fa-solid fa-key me-2"></i>Change Password</a></li>
+            <li class="nav-item"><a class="nav-link text-white" href="#" id="darkModeToggleMobile"><i class="fa-solid fa-moon me-2"></i><span id="darkModeLabelMobile">Dark Mode</span></a></li>
             <li class="nav-item"><a class="nav-link text-white" href="logout.php"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
         </ul>
     </div>
 </div>
+
+<script>
+(function() {
+    var saved = localStorage.getItem('nutriph_dark') === '1';
+    if (saved) document.documentElement.setAttribute('data-theme', 'dark');
+
+    function updateLabels(isDark) {
+        var icon = isDark ? 'fa-sun' : 'fa-moon';
+        var text = isDark ? 'Light Mode' : 'Dark Mode';
+        var color = isDark ? 'text-warning' : 'text-info';
+        document.querySelectorAll('#darkModeToggle i, #darkModeToggleMobile i').forEach(function(i) { i.className = 'fa-solid ' + icon + ' me-2 ' + color; });
+        document.querySelectorAll('#darkModeLabel, #darkModeLabelMobile').forEach(function(s) { s.textContent = text; });
+    }
+
+    function toggle(e) {
+        e.preventDefault();
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (isDark) {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('nutriph_dark', '0');
+            updateLabels(false);
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('nutriph_dark', '1');
+            updateLabels(true);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        updateLabels(saved);
+        var dt = document.getElementById('darkModeToggle');
+        var dtm = document.getElementById('darkModeToggleMobile');
+        if (dt) dt.addEventListener('click', toggle);
+        if (dtm) dtm.addEventListener('click', toggle);
+    });
+})();
+</script>
