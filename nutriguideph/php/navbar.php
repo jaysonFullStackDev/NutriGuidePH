@@ -97,23 +97,31 @@ $navRole = htmlspecialchars($_SESSION['role'] ?? '');
 
 <script>
 function toggleDarkMode(e) {
-    e.preventDefault();
-    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    if (isDark) {
-        document.documentElement.removeAttribute('data-theme');
-        localStorage.setItem('nutriph_dark', '0');
-    } else {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        localStorage.setItem('nutriph_dark', '1');
-    }
-    _updateDarkIcons();
+    if (e) e.preventDefault();
+    try {
+        var html = document.documentElement;
+        var isDark = html.getAttribute('data-theme') === 'dark';
+        if (isDark) {
+            html.removeAttribute('data-theme');
+            localStorage.setItem('nutriph_dark', '0');
+        } else {
+            html.setAttribute('data-theme', 'dark');
+            localStorage.setItem('nutriph_dark', '1');
+        }
+        _updateDarkIcons();
+    } catch(err) { console.error('Dark mode toggle error:', err); }
 }
 function _updateDarkIcons() {
-    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    var icon = isDark ? 'fa-sun' : 'fa-moon';
-    var text = isDark ? 'Light Mode' : 'Dark Mode';
-    document.querySelectorAll('.dm-icon').forEach(function(el) { el.className = 'fa-solid ' + icon + ' ' + el.getAttribute('data-extra'); });
-    document.querySelectorAll('.dm-label').forEach(function(el) { el.textContent = text; });
+    try {
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        var icon = isDark ? 'fa-sun' : 'fa-moon';
+        var text = isDark ? 'Light Mode' : 'Dark Mode';
+        document.querySelectorAll('.dm-icon').forEach(function(el) {
+            var extra = el.getAttribute('data-extra') || '';
+            el.className = 'fa-solid ' + icon + (extra ? ' ' + extra : '') + ' dm-icon';
+        });
+        document.querySelectorAll('.dm-label').forEach(function(el) { el.textContent = text; });
+    } catch(err) { console.error('Dark mode icon update error:', err); }
 }
 _updateDarkIcons();
 </script>

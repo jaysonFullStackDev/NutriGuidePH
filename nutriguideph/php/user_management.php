@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once 'auth.php';
 secureSessionStart();
 checkAccess(['Super Admin']);
