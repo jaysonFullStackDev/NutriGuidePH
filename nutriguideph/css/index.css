@@ -488,6 +488,19 @@ html { scroll-behavior: smooth; }
     color: inherit;
 }
 
+/* ── Dark Mode Toggle Button ──────────────────────────────── */
+#darkModeToggle {
+    color: var(--green-light) !important;
+    opacity: 0.85;
+    transition: all var(--transition);
+}
+#darkModeToggle:hover {
+    opacity: 1;
+    transform: scale(1.15);
+    background-color: rgba(255,255,255,0.12) !important;
+}
+[data-theme="dark"] #darkModeToggle { color: #ffc107 !important; }
+
 /* ── Dark Mode ───────────────────────────────────────────── */
 [data-theme="dark"] {
     --dm-bg: #1a1a2e;

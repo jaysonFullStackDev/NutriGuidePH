@@ -44,6 +44,11 @@ $navRole = htmlspecialchars($_SESSION['role'] ?? '');
                     </ul>
                 </li>
                 <?php endif; ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" id="darkModeToggle" title="Toggle Dark Mode" style="font-size:1.15rem;">
+                        <i class="fa-solid fa-moon" id="darkModeIcon"></i>
+                    </a>
+                </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle text-success-light fw-semibold" href="#" role="button" data-bs-toggle="dropdown">
                         <i class="fa-solid fa-circle-user me-1"></i><?= $navFirstName ?>
@@ -53,7 +58,6 @@ $navRole = htmlspecialchars($_SESSION['role'] ?? '');
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item small" href="#" id="openProfileBtn"><i class="fa-solid fa-user-pen me-2 text-success"></i>My Profile</a></li>
                         <li><a class="dropdown-item small" href="#" id="openPasswordBtn"><i class="fa-solid fa-key me-2 text-warning"></i>Change Password</a></li>
-                        <li><a class="dropdown-item small" href="#" id="darkModeToggle"><i class="fa-solid fa-moon me-2 text-info"></i><span id="darkModeLabel">Dark Mode</span></a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item small text-danger" href="logout.php"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
                     </ul>
@@ -83,7 +87,8 @@ $navRole = htmlspecialchars($_SESSION['role'] ?? '');
             <?php endif; ?>
             <li class="nav-item"><a class="nav-link text-white" href="#" id="openProfileBtnMobile"><i class="fa-solid fa-user-pen me-2"></i>My Profile</a></li>
             <li class="nav-item"><a class="nav-link text-white" href="#" id="openPasswordBtnMobile"><i class="fa-solid fa-key me-2"></i>Change Password</a></li>
-            <li class="nav-item"><a class="nav-link text-white" href="#" id="darkModeToggleMobile"><i class="fa-solid fa-moon me-2"></i><span id="darkModeLabelMobile">Dark Mode</span></a></li>
+            <li class="nav-item"><a class="nav-link text-white" href="#" id="darkModeToggleMobile"><i class="fa-solid fa-moon me-2" id="darkModeIconMobile"></i><span id="darkModeLabelMobile">Dark Mode</span></a></li>
+            <li><hr class="border-secondary my-2"></li>
             <li class="nav-item"><a class="nav-link text-white" href="logout.php"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
         </ul>
     </div>
@@ -94,12 +99,14 @@ $navRole = htmlspecialchars($_SESSION['role'] ?? '');
     var saved = localStorage.getItem('nutriph_dark') === '1';
     if (saved) document.documentElement.setAttribute('data-theme', 'dark');
 
-    function updateLabels(isDark) {
+    function updateIcons(isDark) {
         var icon = isDark ? 'fa-sun' : 'fa-moon';
-        var text = isDark ? 'Light Mode' : 'Dark Mode';
-        var color = isDark ? 'text-warning' : 'text-info';
-        document.querySelectorAll('#darkModeToggle i, #darkModeToggleMobile i').forEach(function(i) { i.className = 'fa-solid ' + icon + ' me-2 ' + color; });
-        document.querySelectorAll('#darkModeLabel, #darkModeLabelMobile').forEach(function(s) { s.textContent = text; });
+        var el = document.getElementById('darkModeIcon');
+        var elM = document.getElementById('darkModeIconMobile');
+        if (el) el.className = 'fa-solid ' + icon;
+        if (elM) elM.className = 'fa-solid ' + icon + ' me-2';
+        var lbl = document.getElementById('darkModeLabelMobile');
+        if (lbl) lbl.textContent = isDark ? 'Light Mode' : 'Dark Mode';
     }
 
     function toggle(e) {
@@ -108,16 +115,15 @@ $navRole = htmlspecialchars($_SESSION['role'] ?? '');
         if (isDark) {
             document.documentElement.removeAttribute('data-theme');
             localStorage.setItem('nutriph_dark', '0');
-            updateLabels(false);
         } else {
             document.documentElement.setAttribute('data-theme', 'dark');
             localStorage.setItem('nutriph_dark', '1');
-            updateLabels(true);
         }
+        updateIcons(!isDark);
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        updateLabels(saved);
+        updateIcons(saved);
         var dt = document.getElementById('darkModeToggle');
         var dtm = document.getElementById('darkModeToggleMobile');
         if (dt) dt.addEventListener('click', toggle);
