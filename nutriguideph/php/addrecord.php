@@ -10,6 +10,7 @@ $save_type = "";
 
 // â”€â”€ Save Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 if (isset($_POST['save_record'])) {
+    verifyCsrf();
     $ln             = $_POST["lname"];
     $fn             = $_POST["fname"];
     $mid            = $_POST["m_initial"];
@@ -50,6 +51,7 @@ if (isset($_POST['save_record'])) {
 $preview = null;
 $validation_error = '';
 if (isset($_POST['submit_form'])) {
+    verifyCsrf();
     $fn     = sanitize($_POST["fname"]);
     $mid    = sanitize($_POST["m_initial"]);
     $ln     = sanitize($_POST["lname"]);
@@ -121,6 +123,7 @@ if (isset($_POST['submit_form'])) {
                         <?php endif; ?>
 
                         <form action="<?= $_SERVER['PHP_SELF'] ?>" method="POST">
+                            <?= csrfField() ?>
                             <p class="section-label mb-3">Student Information</p>
 
                             <div class="row g-3 mb-3">
@@ -267,6 +270,7 @@ if (isset($_POST['submit_form'])) {
                             <?php endif; ?>
 
                             <form action="<?= $_SERVER['PHP_SELF'] ?>" method="POST">
+                                <?= csrfField() ?>
                                 <input type="hidden" name="fname" value="<?= htmlspecialchars($preview['fn']) ?>">
                                 <input type="hidden" name="m_initial" value="<?= htmlspecialchars($preview['mid']) ?>">
                                 <input type="hidden" name="lname" value="<?= htmlspecialchars($preview['ln']) ?>">

@@ -3,7 +3,7 @@ require_once 'auth.php';
 secureSessionStart();
 
 if (!isset($_SESSION['user_id'])) {
-    header("Location: ../pages/signin.html");
+    header("Location: ../pages/signin.php");
     exit();
 }
 

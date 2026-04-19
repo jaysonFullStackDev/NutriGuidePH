@@ -1,3 +1,4 @@
+<?php require_once '../php/auth.php'; secureSessionStart(); ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -125,6 +126,7 @@
             </div>
 
             <form action="../php/connect.php" method="post" id="parentForm">
+                <?= csrfField() ?>
                 <input type="hidden" name="role" value="Parent/Guardian">
 
                 <p class="section-divider mb-3">Personal Information</p>
@@ -236,7 +238,7 @@
             </form>
 
             <p class="text-center text-muted small mb-2">
-                Already have an account? <a href="signin.html" class="link-green">Sign In</a>
+                Already have an account? <a href="signin.php" class="link-green">Sign In</a>
             </p>
             <p class="text-center text-muted small mb-0">
                 Are you a staff member? <a href="Signup.html" class="link-green">Staff Sign Up</a>

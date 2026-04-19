@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once 'auth.php';
 secureSessionStart();
 
@@ -46,11 +46,12 @@ $totalPages = max(1, ceil($totalRecords / $perPage));
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NutriPh Guide â€“ Dashboard</title>
+    <title>NutriPh Guide – Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="../css/index.css">
+    <meta name="csrf-token" content="<?= generateCsrf() ?>">
 </head>
 <body style="background: linear-gradient(135deg, rgba(45,90,14,0.7), rgba(61,107,15,0.6)), url('../images/happy.jpg') center/cover no-repeat fixed; min-height:100vh;">
 
@@ -443,6 +444,7 @@ $totalPages = max(1, ceil($totalRecords / $perPage));
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
         AOS.init({ duration: 700, once: true });
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
         const nav = document.querySelector('.navbar');
         window.addEventListener('scroll', () => { nav.classList.toggle('navbar-scrolled', window.scrollY > 50); });
 
@@ -461,7 +463,7 @@ $totalPages = max(1, ceil($totalRecords / $perPage));
         new Chart(document.getElementById('bmiChart'), { type:'pie', data:{ labels:['Underweight','Normal','Overweight','Obese'], datasets:[{ data:[<?= $underweight ?>,<?= $normal ?>,<?= $overweight ?>,<?= $obese ?>], backgroundColor:['#e74c3c','#27ae60','#f39c12','#8e44ad'], borderWidth:2, borderColor:'#fff' }] }, options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{ padding:16, usePointStyle:true } } } } });
         new Chart(document.getElementById('genderChart'), { type:'doughnut', data:{ labels:['Male','Female'], datasets:[{ data:[<?= $males ?>,<?= $females ?>], backgroundColor:['#2471a3','#c2185b'], borderWidth:2, borderColor:'#fff' }] }, options:{ responsive:true, cutout:'55%', plugins:{ legend:{ position:'bottom', labels:{ padding:16, usePointStyle:true } } } } });
 
-        // â”€â”€ AJAX Live Search Table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── AJAX Live Search Table ──────────────────────────────
         const canEdit = <?= $canEdit ? 'true' : 'false' ?>;
         const colSpan = canEdit ? 9 : 8;
         const tbody = document.getElementById('recordsBody');
@@ -509,7 +511,7 @@ $totalPages = max(1, ceil($totalRecords / $perPage));
         }
         loadRecords();
 
-        // â”€â”€ Student History Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Student History Modal ───────────────────────────────
         const historyModal = new bootstrap.Modal(document.getElementById('studentHistoryModal'));
         const modalBody = document.getElementById('historyModalBody');
         const modalLabel = document.getElementById('studentHistoryLabel');
@@ -529,9 +531,9 @@ $totalPages = max(1, ceil($totalRecords / $perPage));
                             if (data.error || !data.records || data.records.length === 0) { modalBody.innerHTML = '<div class="text-center text-muted py-4"><i class="fa-solid fa-inbox fa-2x mb-2 opacity-25"></i><p>No records found.</p></div>'; return; }
                             const recs = data.records, latest = recs[0], isMal = latest.classification !== 'Normal Weight';
                             function getBadge(c) { return {Underweight:'badge-underweight','Normal Weight':'badge-normal',Overweight:'badge-overweight',Obese:'badge-obese'}[c]||'badge-obese'; }
-                            function getAlert(c) { if(c==='Normal Weight')return''; if(c==='Underweight')return'Underweight â€“ Malnourished'; if(c==='Overweight')return'Overweight â€“ At Risk'; return'Obese â€“ High Risk'; }
+                            function getAlert(c) { if(c==='Normal Weight')return''; if(c==='Underweight')return'Underweight – Malnourished'; if(c==='Overweight')return'Overweight – At Risk'; return'Obese – High Risk'; }
                             let h = '';
-                            if (isMal) { const ac = latest.classification==='Underweight'?'#c0392b':(latest.classification==='Overweight'?'#e67e22':'#8e44ad'); const ab = latest.classification==='Underweight'?'#fff5f5':(latest.classification==='Overweight'?'#fff8f0':'#faf0ff'); h += '<div style="background:'+ab+';border-left:4px solid '+ac+';border-radius:8px;padding:12px 16px;margin-bottom:16px;"><div style="color:'+ac+';font-weight:700;font-size:0.9rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i> '+getAlert(latest.classification)+'</div><div class="text-muted small mt-1">Latest BMI: <b>'+latest.bmi+'</b> â€” '+formatDate(latest.created_at)+'</div></div>'; }
+                            if (isMal) { const ac = latest.classification==='Underweight'?'#c0392b':(latest.classification==='Overweight'?'#e67e22':'#8e44ad'); const ab = latest.classification==='Underweight'?'#fff5f5':(latest.classification==='Overweight'?'#fff8f0':'#faf0ff'); h += '<div style="background:'+ab+';border-left:4px solid '+ac+';border-radius:8px;padding:12px 16px;margin-bottom:16px;"><div style="color:'+ac+';font-weight:700;font-size:0.9rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i> '+getAlert(latest.classification)+'</div><div class="text-muted small mt-1">Latest BMI: <b>'+latest.bmi+'</b> — '+formatDate(latest.created_at)+'</div></div>'; }
                             h += '<div class="card border-0 shadow-sm rounded-3 mb-3" style="border-left:4px solid #78bc27 !important;"><div class="card-body p-3"><div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-bold small text-success"><i class="fa-solid fa-star me-1"></i>Latest</span><span class="badge rounded-pill '+getBadge(latest.classification)+'">'+latest.classification+'</span></div>'+buildDet(latest)+'</div></div>';
                             if (recs.length > 1) { h += '<h6 class="fw-bold small text-muted mt-4 mb-3"><i class="fa-solid fa-history me-1"></i>Previous ('+( recs.length-1)+')</h6>'; for (let i=1;i<recs.length;i++) { const r=recs[i],pm=r.classification!=='Normal Weight',bc=pm?'#e74c3c':'#dee2e6'; h+='<div class="card border-0 shadow-sm rounded-3 mb-2" style="border-left:4px solid '+bc+' !important;"><div class="card-body p-3"><div class="d-flex justify-content-between align-items-center mb-2"><span class="text-muted small">'+formatDate(r.created_at)+'</span><span class="badge rounded-pill '+getBadge(r.classification)+'">'+r.classification+'</span></div>'+buildDet(r)+'</div></div>'; } }
                             else h += '<div class="text-center text-muted small py-3 mt-3" style="background:#f8f9fa;border-radius:8px;"><i class="fa-solid fa-info-circle me-1"></i>Only record for this student.</div>';
@@ -542,7 +544,7 @@ $totalPages = max(1, ceil($totalRecords / $perPage));
         }
         function buildDet(r) { let h='<div class="row g-2 small">'; h+='<div class="col-6 col-md-3"><span class="text-muted">Gender:</span> <b>'+esc(r.gender)+'</b></div>'; h+='<div class="col-6 col-md-3"><span class="text-muted">Height:</span> <b>'+esc(r.height)+' '+esc(r.height_unit)+'</b></div>'; h+='<div class="col-6 col-md-3"><span class="text-muted">Weight:</span> <b>'+esc(r.weight)+' '+esc(r.weight_unit)+'</b></div>'; h+='<div class="col-6 col-md-3"><span class="text-muted">BMI:</span> <b>'+r.bmi+'</b></div>'; if(r.guardian_name) h+='<div class="col-12 mt-1"><span class="text-muted">Guardian:</span> '+esc(r.guardian_name)+'</div>'; h+='</div>'; return h; }
 
-        // â”€â”€ Edit Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Edit Record ─────────────────────────────────────────
         const editModal = new bootstrap.Modal(document.getElementById('editRecordModal'));
         function bindEditBtns() {
             document.querySelectorAll('.edit-record-btn').forEach(btn => {
@@ -570,13 +572,13 @@ $totalPages = max(1, ceil($totalRecords / $perPage));
             });
         }
 
-        // â”€â”€ Delete Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Delete Record ───────────────────────────────────────
         function bindDeleteBtns() {
             document.querySelectorAll('.delete-record-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     if (!confirm('Delete this record? Cannot be undone.')) return;
                     const id = this.dataset.id, row = this.closest('tr');
-                    fetch('delete_record.php', { method:'POST', body: new URLSearchParams({id}) })
+                    fetch('delete_record.php', { method:'POST', body: new URLSearchParams({id, csrf_token: csrfToken}) })
                         .then(r => r.json())
                         .then(data => {
                             if (data.success) { row.style.transition='opacity 0.3s'; row.style.opacity='0'; setTimeout(()=>{row.remove();showToast('Record deleted.');},300); }
@@ -586,7 +588,7 @@ $totalPages = max(1, ceil($totalRecords / $perPage));
             });
         }
 
-        // â”€â”€ Profile Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Profile Modal ───────────────────────────────────────
         const profileModalEl = new bootstrap.Modal(document.getElementById('profileModal'));
         const profileBody = document.getElementById('profileModalBody');
         const passwordModalEl = new bootstrap.Modal(document.getElementById('passwordModal'));
@@ -629,7 +631,7 @@ $totalPages = max(1, ceil($totalRecords / $perPage));
             }).catch(()=>showToast('Network error.','error'));
         });
 
-        // â”€â”€ Edit Form Submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Edit Form Submit ────────────────────────────────────
         document.getElementById('editRecordForm').addEventListener('submit', function(e) {
             e.preventDefault();
             fetch('update_record.php',{method:'POST',body:new FormData(this)}).then(r=>r.json()).then(data=>{

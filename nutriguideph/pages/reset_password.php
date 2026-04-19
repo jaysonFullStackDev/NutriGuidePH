@@ -1,3 +1,4 @@
+<?php require_once '../php/auth.php'; secureSessionStart(); ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -40,6 +41,7 @@
             <div class="alert alert-danger small py-2 d-none" id="errorMsg"><i class="fa-solid fa-circle-exclamation me-1"></i><span id="errorText"></span></div>
 
             <form action="../php/reset_password.php" method="post">
+                <?= csrfField() ?>
                 <div class="mb-3">
                     <label class="form-label small fw-semibold text-muted">Reset Code</label>
                     <div class="input-group">
@@ -65,7 +67,7 @@
                     <i class="fa-solid fa-key me-2"></i>Reset Password
                 </button>
             </form>
-            <p class="text-center small mb-0"><a href="forgot_password.html" class="text-muted text-decoration-none"><i class="fa-solid fa-arrow-left me-1"></i>Resend code</a></p>
+            <p class="text-center small mb-0"><a href="forgot_password.php" class="text-muted text-decoration-none"><i class="fa-solid fa-arrow-left me-1"></i>Resend code</a></p>
         </div>
     </div>
 

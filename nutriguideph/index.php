@@ -37,7 +37,7 @@
                         <li class="nav-item"><a class="nav-link" href="#nutrition">Nutrition Guide</a></li>
                         <li class="nav-item"><a class="nav-link" href="#bmi">BMI Info</a></li>
                         <li class="nav-item"><a class="nav-link" href="#footer">About Us</a></li>
-                        <li class="nav-item"><a class="nav-link btn btn-success btn-sm text-white px-3 ms-2" href="pages/signin.html">Login</a></li>
+                        <li class="nav-item"><a class="nav-link btn btn-success btn-sm text-white px-3 ms-2" href="pages/signin.php">Login</a></li>
                     <?php endif; ?>
                 </ul>
             </div>
@@ -62,7 +62,7 @@
                     <li class="nav-item"><a class="nav-link text-white" href="#nutrition"><i class="fa-solid fa-apple-whole me-2"></i>Nutrition Guide</a></li>
                     <li class="nav-item"><a class="nav-link text-white" href="#bmi"><i class="fa-solid fa-weight-scale me-2"></i>BMI Info</a></li>
                     <li class="nav-item"><a class="nav-link text-white" href="#footer"><i class="fa-solid fa-circle-info me-2"></i>About Us</a></li>
-                    <li class="nav-item"><a class="nav-link text-white" href="pages/signin.html"><i class="fa-solid fa-right-to-bracket me-2"></i>Login</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" href="pages/signin.php"><i class="fa-solid fa-right-to-bracket me-2"></i>Login</a></li>
                 <?php endif; ?>
             </ul>
         </div>
@@ -80,7 +80,7 @@
                     <p class="lead text-white-50 mb-4">Track and support student health through BMI monitoring, nutritional guidance, and feeding programs — all in one place.</p>
                     <div class="d-flex gap-2 justify-content-center justify-content-lg-start flex-wrap">
                         <?php if (!isset($_SESSION['user_id'])): ?>
-                            <a href="pages/signin.html" class="btn btn-light btn-lg px-4 fw-semibold"><i class="fa-solid fa-right-to-bracket me-2"></i>Get Started</a>
+                            <a href="pages/signin.php" class="btn btn-light btn-lg px-4 fw-semibold"><i class="fa-solid fa-right-to-bracket me-2"></i>Get Started</a>
                             <a href="#how-it-works" class="btn btn-outline-light btn-lg px-4 fw-semibold"><i class="fa-solid fa-circle-play me-2"></i>Learn More</a>
                         <?php else: ?>
                             <a href="php/dashboard.php" class="btn btn-light btn-lg px-4 fw-semibold"><i class="fa-solid fa-gauge me-2"></i>Dashboard</a>

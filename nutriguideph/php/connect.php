@@ -4,17 +4,19 @@ secureSessionStart();
 
 $firstName        = sanitize($_POST['firstName'] ?? '');
 $lastName         = sanitize($_POST['lastName'] ?? '');
+
+verifyCsrf();
 $role             = $_POST['role'] ?? '';
 $email            = trim($_POST['Email'] ?? '');
 $password         = $_POST['password'] ?? '';
 $confirm_password = $_POST['confirm_password'] ?? '';
 $consent          = isset($_POST['consent_agreed']) ? 1 : 0;
 
-$redirect_page = 'parent_signup.html';
+$redirect_page = 'parent_signup.php';
 
 // Only Parent/Guardian can self-register. Staff accounts are created by Super Admin.
 if ($role !== 'Parent/Guardian') {
-    header("Location: ../pages/signin.html");
+    header("Location: ../pages/signin.php");
     exit();
 }
 
@@ -77,7 +79,7 @@ if ($stmt->execute()) {
     $_SESSION['verify_email'] = $email;
     $_SESSION['verify_name']  = $firstName;
 
-    header("Location: ../pages/verify.html" . ($sent ? '' : '?error=email_failed'));
+    header("Location: ../pages/verify.php" . ($sent ? '' : '?error=email_failed'));
     exit();
 } else {
     if ($conn->errno == 1062) {

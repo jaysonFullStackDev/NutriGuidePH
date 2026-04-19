@@ -3,18 +3,20 @@ require_once 'auth.php';
 secureSessionStart();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: ../pages/forgot_password.html");
+    header("Location: ../pages/forgot_password.php");
     exit();
 }
 
+verifyCsrf();
+
 $email = trim($_POST['email'] ?? '');
 if (empty($email)) {
-    header("Location: ../pages/forgot_password.html?error=no_account");
+    header("Location: ../pages/forgot_password.php?error=no_account");
     exit();
 }
 
 if (!checkRateLimit('forgot_' . $email, 3, 300)) {
-    header("Location: ../pages/forgot_password.html?error=rate_limited");
+    header("Location: ../pages/forgot_password.php?error=rate_limited");
     exit();
 }
 
@@ -26,7 +28,7 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows !== 1) {
-    header("Location: ../pages/forgot_password.html?error=no_account");
+    header("Location: ../pages/forgot_password.php?error=no_account");
     exit();
 }
 
@@ -48,9 +50,9 @@ $sent = sendVerificationEmail($email, $user['firstName'], $code);
 $_SESSION['reset_email'] = $email;
 
 if ($sent) {
-    header("Location: ../pages/reset_password.html");
+    header("Location: ../pages/reset_password.php");
 } else {
-    header("Location: ../pages/forgot_password.html?error=email_failed");
+    header("Location: ../pages/forgot_password.php?error=email_failed");
 }
 exit();
 ?>

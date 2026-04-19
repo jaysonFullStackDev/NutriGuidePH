@@ -1,10 +1,50 @@
 <?php
+// ── Environment ─────────────────────────────────────────────
+// Set to false on localhost/XAMPP, true on production server
+define('IS_PRODUCTION', isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on');
+
+// ── Security Headers ────────────────────────────────────────
+function setSecurityHeaders() {
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: SAMEORIGIN');
+    header('X-XSS-Protection: 1; mode=block');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    if (IS_PRODUCTION) {
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    }
+}
+setSecurityHeaders();
+
+// ── HTTPS Redirect (production only) ────────────────────────
+function enforceHttps() {
+    if (IS_PRODUCTION) return; // Already HTTPS
+    // On production hosting, redirect HTTP to HTTPS
+    if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'http') {
+        header('Location: https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'], true, 301);
+        exit();
+    }
+}
+enforceHttps();
+
 // ── Session Security ────────────────────────────────────────
 function secureSessionStart() {
     if (session_status() === PHP_SESSION_NONE) {
         ini_set('session.cookie_httponly', 1);
         ini_set('session.use_strict_mode', 1);
+        ini_set('session.cookie_samesite', 'Lax');
+        if (IS_PRODUCTION) {
+            ini_set('session.cookie_secure', 1);
+        }
+        ini_set('session.gc_maxlifetime', 3600); // 1 hour
         session_start();
+
+        // Session timeout: 1 hour of inactivity
+        if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > 3600) {
+            session_unset();
+            session_destroy();
+            session_start();
+        }
+        $_SESSION['last_activity'] = time();
     }
 }
 
@@ -13,11 +53,23 @@ function setupErrorHandler() {
     $logDir = __DIR__ . '/../logs';
     if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
     ini_set('display_errors', 0);
+    ini_set('display_startup_errors', 0);
     ini_set('log_errors', 1);
     ini_set('error_log', $logDir . '/error_' . date('Y-m') . '.log');
     set_error_handler(function($severity, $message, $file, $line) {
-        error_log("[$severity] $message in $file:$line");
+        error_log("[" . date('Y-m-d H:i:s') . "] [$severity] $message in $file:$line");
         return true;
+    });
+    set_exception_handler(function($e) {
+        error_log("[" . date('Y-m-d H:i:s') . "] EXCEPTION: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+        http_response_code(500);
+        if (strpos($_SERVER['HTTP_ACCEPT'] ?? '', 'json') !== false) {
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'An unexpected error occurred']);
+        } else {
+            echo '<h3>Something went wrong</h3><p>Please try again later.</p>';
+        }
+        exit();
     });
 }
 setupErrorHandler();
@@ -25,7 +77,7 @@ setupErrorHandler();
 // ── Access Control ──────────────────────────────────────────
 function checkAccess($allowedRoles = []) {
     if (!isset($_SESSION['user_id'])) {
-        header("Location: ../pages/signin.html");
+        header("Location: ../pages/signin.php");
         exit();
     }
     if (!empty($allowedRoles) && !in_array($_SESSION['role'] ?? '', $allowedRoles)) {
@@ -62,9 +114,9 @@ function verifyCsrf() {
         http_response_code(403);
         if (strpos($_SERVER['HTTP_ACCEPT'] ?? '', 'json') !== false) {
             header('Content-Type: application/json');
-            echo json_encode(['error' => 'Invalid request token']);
+            echo json_encode(['error' => 'Invalid request token. Please refresh the page.']);
         } else {
-            header("Location: ../pages/signin.html");
+            header("Location: ../pages/signin.php");
         }
         exit();
     }
@@ -107,20 +159,22 @@ function sanitize($str) {
 
 // ── Audit Logging ───────────────────────────────────────────
 function auditLog($action, $targetType = null, $targetId = null, $details = null) {
-    require_once __DIR__ . '/config.php';
-    $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-    if ($conn->connect_error) return;
-    mysqli_report(MYSQLI_REPORT_OFF);
-
-    $email = $_SESSION['user_id'] ?? 'system';
-    $name  = $_SESSION['firstName'] ?? 'System';
-    $ip    = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-
-    $stmt = $conn->prepare("INSERT INTO audit_log (user_email, user_name, action, target_type, target_id, details, ip_address) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssssiss", $email, $name, $action, $targetType, $targetId, $details, $ip);
-    $stmt->execute();
-    $stmt->close();
-    $conn->close();
+    try {
+        require_once __DIR__ . '/config.php';
+        $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+        if ($conn->connect_error) return;
+        mysqli_report(MYSQLI_REPORT_OFF);
+        $email = $_SESSION['user_id'] ?? 'system';
+        $name  = $_SESSION['firstName'] ?? 'System';
+        $ip    = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        $stmt = $conn->prepare("INSERT INTO audit_log (user_email, user_name, action, target_type, target_id, details, ip_address) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssiss", $email, $name, $action, $targetType, $targetId, $details, $ip);
+        $stmt->execute();
+        $stmt->close();
+        $conn->close();
+    } catch (Exception $e) {
+        error_log("Audit log failed: " . $e->getMessage());
+    }
 }
 
 // ── DB Helper ───────────────────────────────────────────────
@@ -129,9 +183,11 @@ function getDB() {
     $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
     if ($conn->connect_error) {
         error_log("DB connection failed: " . $conn->connect_error);
-        die("Service temporarily unavailable.");
+        http_response_code(503);
+        die("Service temporarily unavailable. Please try again later.");
     }
     mysqli_report(MYSQLI_REPORT_OFF);
+    $conn->set_charset('utf8mb4');
     return $conn;
 }
 ?>

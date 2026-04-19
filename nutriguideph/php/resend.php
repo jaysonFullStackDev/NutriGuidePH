@@ -3,7 +3,7 @@ require_once 'auth.php';
 secureSessionStart();
 
 if (!isset($_SESSION['verify_email'])) {
-    header("Location: ../pages/signin.html");
+    header("Location: ../pages/signin.php");
     exit();
 }
 
@@ -20,7 +20,7 @@ $stmt->bind_param("sss", $code, $expires, $email);
 $stmt->execute();
 
 if ($stmt->affected_rows === 0) {
-    header("Location: ../pages/verify.html?error=not_found");
+    header("Location: ../pages/verify.php?error=not_found");
     exit();
 }
 
@@ -31,9 +31,9 @@ require_once 'mailer.php';
 $sent = sendVerificationEmail($email, $name, $code);
 
 if ($sent) {
-    header("Location: ../pages/verify.html?success=resent");
+    header("Location: ../pages/verify.php?success=resent");
 } else {
-    header("Location: ../pages/verify.html?error=email_failed");
+    header("Location: ../pages/verify.php?error=email_failed");
 }
 exit();
 ?>

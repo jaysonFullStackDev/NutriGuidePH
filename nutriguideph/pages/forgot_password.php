@@ -1,3 +1,4 @@
+<?php require_once '../php/auth.php'; secureSessionStart(); ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -40,6 +41,7 @@
             <div class="alert alert-success small py-2 d-none" id="successMsg"><i class="fa-solid fa-circle-check me-1"></i><span id="successText"></span></div>
 
             <form action="../php/forgot_password.php" method="post">
+                <?= csrfField() ?>
                 <div class="mb-4 text-start">
                     <label class="form-label small fw-semibold text-muted">Email Address</label>
                     <div class="input-group">
@@ -52,7 +54,7 @@
                 </button>
             </form>
 
-            <p class="small mb-0"><a href="signin.html" class="text-muted text-decoration-none"><i class="fa-solid fa-arrow-left me-1"></i>Back to Sign In</a></p>
+            <p class="small mb-0"><a href="signin.php" class="text-muted text-decoration-none"><i class="fa-solid fa-arrow-left me-1"></i>Back to Sign In</a></p>
         </div>
     </div>
 

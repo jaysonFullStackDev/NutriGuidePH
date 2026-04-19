@@ -1,3 +1,4 @@
+<?php require_once '../php/auth.php'; secureSessionStart(); ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -50,6 +51,7 @@
             <div class="alert alert-success small py-2 d-none" id="successMsg"><i class="fa-solid fa-circle-check me-1"></i><span id="successText"></span></div>
 
             <form action="../php/verify.php" method="post" onsubmit="collectCode()">
+                <?= csrfField() ?>
                 <input type="hidden" name="code" id="codeInput">
                 <div class="otp-wrapper mb-4">
                     <input type="text" class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]">
@@ -68,7 +70,7 @@
                 Didn't receive a code? <a href="../php/resend.php" class="link-green">Resend code</a>
             </p>
             <p class="small mb-0">
-                <a href="signin.html" class="text-muted text-decoration-none">
+                <a href="signin.php" class="text-muted text-decoration-none">
                     <i class="fa-solid fa-arrow-left me-1"></i>Back to Sign In
                 </a>
             </p>

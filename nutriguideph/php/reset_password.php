@@ -3,12 +3,14 @@ require_once 'auth.php';
 secureSessionStart();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: ../pages/reset_password.html");
+    header("Location: ../pages/reset_password.php");
     exit();
 }
 
+verifyCsrf();
+
 if (!isset($_SESSION['reset_email'])) {
-    header("Location: ../pages/reset_password.html?error=no_session");
+    header("Location: ../pages/reset_password.php?error=no_session");
     exit();
 }
 
@@ -18,12 +20,12 @@ $confirm  = $_POST['confirm_password'] ?? '';
 $email    = $_SESSION['reset_email'];
 
 if (strlen($newPass) < 6) {
-    header("Location: ../pages/reset_password.html?error=weak");
+    header("Location: ../pages/reset_password.php?error=weak");
     exit();
 }
 
 if ($newPass !== $confirm) {
-    header("Location: ../pages/reset_password.html?error=mismatch");
+    header("Location: ../pages/reset_password.php?error=mismatch");
     exit();
 }
 
@@ -35,7 +37,7 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows !== 1) {
-    header("Location: ../pages/reset_password.html?error=no_session");
+    header("Location: ../pages/reset_password.php?error=no_session");
     exit();
 }
 
@@ -43,12 +45,12 @@ $row = $result->fetch_assoc();
 $stmt->close();
 
 if (new DateTime() > new DateTime($row['code_expires'])) {
-    header("Location: ../pages/reset_password.html?error=code_expired");
+    header("Location: ../pages/reset_password.php?error=code_expired");
     exit();
 }
 
 if ($code !== $row['verification_code']) {
-    header("Location: ../pages/reset_password.html?error=wrong_code");
+    header("Location: ../pages/reset_password.php?error=wrong_code");
     exit();
 }
 
@@ -61,6 +63,6 @@ $conn->close();
 
 unset($_SESSION['reset_email']);
 
-header("Location: ../pages/signin.html?success=password_reset");
+header("Location: ../pages/signin.php?success=password_reset");
 exit();
 ?>

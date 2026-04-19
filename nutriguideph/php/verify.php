@@ -3,20 +3,22 @@ require_once 'auth.php';
 secureSessionStart();
 
 if (!isset($_SESSION['verify_email'])) {
-    header("Location: ../pages/signin.html");
+    header("Location: ../pages/signin.php");
     exit();
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: ../pages/verify.html");
+    header("Location: ../pages/verify.php");
     exit();
 }
+
+verifyCsrf();
 
 $code  = trim($_POST['code']);
 $email = $_SESSION['verify_email'];
 
 if (empty($code) || strlen($code) !== 6) {
-    header("Location: ../pages/verify.html?error=invalid_code");
+    header("Location: ../pages/verify.php?error=invalid_code");
     exit();
 }
 
@@ -28,7 +30,7 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows !== 1) {
-    header("Location: ../pages/verify.html?error=not_found");
+    header("Location: ../pages/verify.php?error=not_found");
     exit();
 }
 
@@ -36,13 +38,13 @@ $row = $result->fetch_assoc();
 
 // Check expiry
 if (new DateTime() > new DateTime($row['code_expires'])) {
-    header("Location: ../pages/verify.html?error=code_expired");
+    header("Location: ../pages/verify.php?error=code_expired");
     exit();
 }
 
 // Check code
 if ($code !== $row['verification_code']) {
-    header("Location: ../pages/verify.html?error=wrong_code");
+    header("Location: ../pages/verify.php?error=wrong_code");
     exit();
 }
 
@@ -57,6 +59,6 @@ $stmt->close();
 $upd->close();
 $conn->close();
 
-header("Location: ../pages/signin.html?success=registered");
+header("Location: ../pages/signin.php?success=registered");
 exit();
 ?>

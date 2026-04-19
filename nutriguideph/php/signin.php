@@ -3,17 +3,18 @@ require_once 'auth.php';
 secureSessionStart();
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    verifyCsrf();
     $email    = trim($_POST['Email']);
     $password = $_POST['password'];
 
     if (empty($email) || empty($password)) {
-        header("Location: ../pages/signin.html?error=empty_fields");
+        header("Location: ../pages/signin.php?error=empty_fields");
         exit();
     }
 
     // Rate limit: 5 attempts per 5 minutes
     if (!checkRateLimit('login_' . $email, 5, 300)) {
-        header("Location: ../pages/signin.html?error=rate_limited");
+        header("Location: ../pages/signin.php?error=rate_limited");
         exit();
     }
 
@@ -32,19 +33,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if (!$user['is_verified']) {
                 $_SESSION['verify_email'] = $email;
                 $_SESSION['verify_name']  = $user['firstName'];
-                header("Location: ../pages/verify.html?error=not_verified");
+                header("Location: ../pages/verify.php?error=not_verified");
                 exit();
             }
 
             // Block pending staff accounts
             if (($user['status'] ?? 'pending') === 'pending' && $user['role'] !== 'Parent/Guardian') {
-                header("Location: ../pages/signin.html?error=pending_approval");
+                header("Location: ../pages/signin.php?error=pending_approval");
                 exit();
             }
 
             // Block deactivated accounts
             if (($user['status'] ?? '') === 'deactivated') {
-                header("Location: ../pages/signin.html?error=deactivated");
+                header("Location: ../pages/signin.php?error=deactivated");
                 exit();
             }
 
@@ -66,11 +67,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
             exit();
         } else {
-            header("Location: ../pages/signin.html?error=wrong_password");
+            header("Location: ../pages/signin.php?error=wrong_password");
             exit();
         }
     } else {
-        header("Location: ../pages/signin.html?error=no_account");
+        header("Location: ../pages/signin.php?error=no_account");
         exit();
     }
 

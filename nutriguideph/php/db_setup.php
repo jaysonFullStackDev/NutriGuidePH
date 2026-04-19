@@ -112,11 +112,11 @@ if ($count == 0) {
     $defaultPass = password_hash('admin123', PASSWORD_DEFAULT);
     $conn->query("INSERT INTO accounts (firstName, lastName, role, email, password, is_verified, status) VALUES ('System', 'Admin', 'Super Admin', 'admin@nutriph.com', '$defaultPass', 1, 'active')");
     echo "<br><div style='background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:16px;margin:16px 0;'>";
-    echo "<p style='margin:0;font-weight:700;color:#856404;'>⚠️ Default Super Admin Created</p>";
-    echo "<p style='margin:4px 0 0;color:#856404;'>Email: <b>admin@nutriph.com</b> | Password: <b>admin123</b></p>";
-    echo "<p style='margin:8px 0 0;color:#856404;font-size:0.85rem;'>Change this password immediately!</p></div>";
+    echo "<p style='margin:0;font-weight:700;color:#856404;'>Default Super Admin created.</p>";
+    echo "<p style='margin:4px 0 0;color:#856404;'>Email: <b>admin@nutriph.com</b></p>";
+    echo "<p style='margin:4px 0 0;color:#856404;font-size:0.85rem;'>Default password has been set. Change it immediately after first login.</p></div>";
 }
 
-echo "<br><a href='../pages/signin.html'>Go to Sign In</a>";
+echo "<br><a href='../pages/signin.php'>Go to Sign In</a>";
 $conn->close();
 ?>

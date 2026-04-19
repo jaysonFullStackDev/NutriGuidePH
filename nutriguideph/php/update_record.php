@@ -3,10 +3,8 @@ require_once 'auth.php';
 secureSessionStart();
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['user_id']) || !isAdmin()) {
-    echo json_encode(['error' => 'Permission denied']);
-    exit();
-}
+if (!isset($_SESSION['user_id']) || !isAdmin()) { echo json_encode(['error' => 'Permission denied']); exit(); }
+verifyCsrf();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['error' => 'Invalid method']);

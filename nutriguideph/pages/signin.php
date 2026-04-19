@@ -1,3 +1,4 @@
+<?php require_once '../php/auth.php'; secureSessionStart(); ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -52,6 +53,7 @@
             </div>
 
             <form action="../php/signin.php" method="post" id="signinForm">
+                <?= csrfField() ?>
                 <div class="mb-3">
                     <label for="Email" class="form-label fw-semibold text-muted">Email</label>
                     <div class="input-group">
@@ -63,7 +65,7 @@
                 <div class="mb-2">
                     <div class="d-flex justify-content-between align-items-center">
                         <label for="password" class="form-label fw-semibold text-muted mb-0">Password</label>
-                        <a href="forgot_password.html" class="link-green" style="font-size:0.76rem;">Forgot password?</a>
+                <a href="forgot_password.php" class="link-green" style="font-size:0.76rem;">Forgot password?</a>
                     </div>
                     <div class="input-group mt-1">
                         <span class="input-group-text bg-light"><i class="fa-solid fa-lock text-muted"></i></span>
@@ -82,7 +84,7 @@
             <div class="divider"><span>parent?</span></div>
 
             <p class="text-center text-muted small mb-0">
-                <a href="parent_signup.html" class="link-green"><i class="fa-solid fa-user-group me-1"></i>Sign Up as Parent/Guardian</a>
+                <a href="parent_signup.php" class="link-green"><i class="fa-solid fa-user-group me-1"></i>Sign Up as Parent/Guardian</a>
             </p>
         </div>
     </div>
