@@ -17,6 +17,7 @@ if (isset($_POST['save_record'])) {
     $gender         = $_POST["gender"];
     $grade          = $_POST["grade_level"] ?? '';
     $section        = $_POST["section"] ?? '';
+    $school_year    = $_POST["school_year"] ?? '';
     $height         = $_POST["height"];
     $h_unit         = $_POST["measurement_unit"];
     $weight         = $_POST["weight"];
@@ -27,8 +28,8 @@ if (isset($_POST['save_record'])) {
     $contact        = $_POST["number"];
     $email          = $_POST["email"];
 
-    $stmt = $conn->prepare("INSERT INTO stdRecord (std_last_name, std_first_name, std_mid_initial, gender, grade_level, section, height, height_unit, weight, weight_unit, classification, bmi, guardian_name, guardian_number, guardian_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("sssssssssssssss", $ln, $fn, $mid, $gender, $grade, $section, $height, $h_unit, $weight, $w_unit, $classification, $bmi, $pname, $contact, $email);
+    $stmt = $conn->prepare("INSERT INTO stdRecord (std_last_name, std_first_name, std_mid_initial, gender, grade_level, section, school_year, height, height_unit, weight, weight_unit, classification, bmi, guardian_name, guardian_number, guardian_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssssssssssssssss", $ln, $fn, $mid, $gender, $grade, $section, $school_year, $height, $h_unit, $weight, $w_unit, $classification, $bmi, $pname, $contact, $email);
 
     if ($stmt->execute()) {
         $save_msg  = "Record saved successfully!";
@@ -59,6 +60,7 @@ if (isset($_POST['submit_form'])) {
     $gender = $_POST["gender"];
     $grade  = sanitize($_POST["grade_level"] ?? '');
     $section = sanitize($_POST["section"] ?? '');
+    $school_year = sanitize($_POST["school_year"] ?? '');
     $weight = floatval($_POST["weight"]);
     $w_unit = $_POST["weight_unit"];
     $height = floatval($_POST["height"]);
@@ -85,7 +87,7 @@ if (isset($_POST['submit_form'])) {
     elseif  ($bmi <= 29.9) { $classification = "Overweight"; }
     else                   { $classification = "Obese"; }
 
-    $preview = compact('fn','mid','ln','bday','gender','grade','section','weight','w_unit','height','h_unit','bmi','classification','pname','contact','email');
+    $preview = compact('fn','mid','ln','bday','gender','grade','section','school_year','weight','w_unit','height','h_unit','bmi','classification','pname','contact','email');
     }
 }
 ?>
@@ -169,6 +171,22 @@ if (isset($_POST['submit_form'])) {
                                     <label class="form-label small fw-semibold text-muted">Section</label>
                                     <input type="text" class="form-control" name="section" placeholder="e.g. Sampaguita" value="<?= htmlspecialchars($preview['section'] ?? '') ?>">
                                 </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-muted">School Year</label>
+                                <select class="form-select" name="school_year">
+                                    <?php
+                                    $currentYear = date('Y');
+                                    $currentMonth = date('n');
+                                    $sy = ($currentMonth >= 6) ? $currentYear . '-' . ($currentYear+1) : ($currentYear-1) . '-' . $currentYear;
+                                    for ($y = $currentYear+1; $y >= $currentYear-3; $y--) {
+                                        $val = ($y-1) . '-' . $y;
+                                        $sel = (($preview['school_year'] ?? $sy) === $val) ? 'selected' : '';
+                                        echo "<option value='$val' $sel>$val</option>";
+                                    }
+                                    ?>
+                                </select>
                             </div>
 
                             <p class="section-label mb-3 mt-4">Physical Measurements</p>
@@ -277,6 +295,7 @@ if (isset($_POST['submit_form'])) {
                                 <input type="hidden" name="gender" value="<?= htmlspecialchars($preview['gender']) ?>">
                                 <input type="hidden" name="grade_level" value="<?= htmlspecialchars($preview['grade'] ?? '') ?>">
                                 <input type="hidden" name="section" value="<?= htmlspecialchars($preview['section'] ?? '') ?>">
+                                <input type="hidden" name="school_year" value="<?= htmlspecialchars($preview['school_year'] ?? '') ?>">
                                 <input type="hidden" name="height" value="<?= htmlspecialchars($preview['height']) ?>">
                                 <input type="hidden" name="measurement_unit" value="<?= htmlspecialchars($preview['h_unit']) ?>">
                                 <input type="hidden" name="weight" value="<?= htmlspecialchars($preview['weight']) ?>">
